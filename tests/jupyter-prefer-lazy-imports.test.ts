@@ -2364,6 +2364,45 @@ ruleTester.run('prefer-lazy-imports (report re-exports)', preferLazyImports, {
       `,
       options: [{ reportReExports: true }]
     },
+    // When the import is used directly in activate() of an autostart plugin,
+    // a value re-export also keeps it eager, but the rule must not report
+    // usedInAutostartActivate because deferring the import would leave the
+    // re-export keeping the module eager.
+    {
+      code: `
+        import { JupyterFrontEndPlugin } from '@jupyterlab/application';
+        import { NotebookDiff } from './diff';
+        export { NotebookDiff } from './diff';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'my-ext:diff',
+          autoStart: true,
+          activate: (app) => {
+            NotebookDiff.registerDefaults();
+            app.commands.addCommand('my-ext:diff', {
+              execute: () => new NotebookDiff()
+            });
+          }
+        };
+      `,
+      options: [{ reportReExports: true }]
+    },
+    // When the import is used at module level and also re-exported, enabling
+    // both reportReExports and reportModuleLevelUsage must not report eagerModuleLevelUse
+    // because deferring the module-level use would leave the re-export keeping the module eager.
+    {
+      code: `
+        import { JupyterFrontEndPlugin } from '@jupyterlab/application';
+        import { NotebookDiff } from './diff';
+        export { NotebookDiff } from './diff';
+        const shared = new NotebookDiff();
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'test:plugin',
+          autoStart: true,
+          activate: () => shared
+        };
+      `,
+      options: [{ reportReExports: true, reportModuleLevelUsage: true }]
+    },
     // Exempt packages (allowedPackages) are not reported even when re-exported.
     {
       code: `

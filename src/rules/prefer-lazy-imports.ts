@@ -174,7 +174,6 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
     let isPluginModule = false;
     const importDeclarations: TSESTree.ImportDeclaration[] = [];
     // Sources kept in the startup bundle by a value re-export.
-    const reExportedSources = new Set<string>();
     const reExportDeclarations = new Map<
       string,
       (TSESTree.ExportNamedDeclaration | TSESTree.ExportAllDeclaration)[]
@@ -303,10 +302,8 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
       source: string,
       declarations: TSESTree.ImportDeclaration[]
     ): void {
-      if (
-        isExempt(source) ||
-        (!reportReExports && reExportedSources.has(source))
-      ) {
+      const reExports = reExportDeclarations.get(source);
+      if (isExempt(source) || (!reportReExports && reExports)) {
         return;
       }
 
@@ -337,7 +334,6 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
             isInInteractionCallback(identifier)
           )
         ) {
-          const reExports = reExportDeclarations.get(source);
           if (reExports && reportReExports) {
             for (const reExportNode of reExports) {
               reportUnlessTooSmall({
@@ -384,6 +380,9 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
       }
 
       if (tokenList === 0 && eager === 0 && activation > 0) {
+        if (reExports) {
+          return;
+        }
         // `Application.start` waits for every autostart plugin before it
         // attaches the shell, so the module is fetched before the application
         // starts whatever this file does, and an `await import()` inside
@@ -399,7 +398,6 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
       }
 
       if (tokenList === 0 && eager === 0 && deferrable > 0) {
-        const reExports = reExportDeclarations.get(source);
         if (reExports && reportReExports) {
           for (const reExportNode of reExports) {
             reportUnlessTooSmall({
@@ -422,6 +420,9 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
       }
 
       if (reportModuleLevelUsage && eager > 0 && tokenList === 0) {
+        if (reExports) {
+          return;
+        }
         reportUnlessTooSmall({
           node: declarations[0],
           messageId: 'eagerModuleLevelUse',
@@ -536,7 +537,6 @@ const jupyterPreferLazyImports = createRule<[LazyImportOptions], string>({
           data: { source }
         });
       } else if (hasValueSpecifier) {
-        reExportedSources.add(source);
         const list = reExportDeclarations.get(source);
         if (list) {
           list.push(node);
