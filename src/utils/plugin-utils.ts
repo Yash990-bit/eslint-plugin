@@ -358,13 +358,21 @@ export function isPluginArrayType(
   if (typeNode.type === 'TSTupleType') {
     return (
       typeNode.elementTypes.length > 0 &&
-      typeNode.elementTypes.every(t =>
-        isPluginDescriptorType(
-          t.type === 'TSNamedTupleMember' ? t.elementType : t,
-          checker,
-          getTSNode
-        )
-      )
+      typeNode.elementTypes.every(t => {
+        let elementType = t.type === 'TSNamedTupleMember' ? t.elementType : t;
+        if (elementType.type === 'TSRestType') {
+          let restTarget: TSESTree.TypeNode =
+            elementType.typeAnnotation ??
+            (elementType as unknown as { elementType?: TSESTree.TypeNode })
+              .elementType ??
+            elementType;
+          if (restTarget.type === 'TSNamedTupleMember') {
+            restTarget = restTarget.elementType;
+          }
+          return isPluginArrayType(restTarget, checker, getTSNode);
+        }
+        return isPluginDescriptorType(elementType, checker, getTSNode);
+      })
     );
   }
   if (typeNode.type === 'TSTypeReference') {

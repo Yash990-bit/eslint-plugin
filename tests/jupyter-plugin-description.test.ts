@@ -126,6 +126,23 @@ ruleTester.run('plugin-description', pluginDescription, {
       code: `
         const pluginMap: Map<string, JupyterFrontEndPlugin<any>> = new Map();
       `
+    },
+    {
+      // Tuple with rest element
+      code: `
+        const plugins: [JupyterFrontEndPlugin<any>, ...JupyterFrontEndPlugin<any>[]] = [
+          {
+            id: 'plugin-1',
+            description: 'First plugin',
+            activate: () => {}
+          },
+          {
+            id: 'plugin-2',
+            description: 'Second plugin',
+            activate: () => {}
+          }
+        ];
+      `
     }
   ],
 
@@ -265,6 +282,22 @@ ruleTester.run('plugin-description', pluginDescription, {
         {
           messageId: 'missingDescription',
           data: { pluginId: ' "single-cast-plugin"' }
+        }
+      ]
+    },
+    {
+      code: `
+        const plugins: [JupyterFrontEndPlugin<any>, ...JupyterFrontEndPlugin<any>[]] = [
+          {
+            id: 'tuple-plugin',
+            activate: () => {}
+          }
+        ];
+      `,
+      errors: [
+        {
+          messageId: 'missingDescription',
+          data: { pluginId: ' "tuple-plugin"' }
         }
       ]
     }
