@@ -327,6 +327,9 @@ export function isPluginDescriptorType(
       isPluginTypeName(resolveTypeAlias(typeNode.typeName, checker, getTSNode))
     );
   }
+  if (typeNode.type === 'TSTypeOperator' && typeNode.operator === 'readonly') {
+    return isPluginDescriptorType(typeNode.typeAnnotation, checker, getTSNode);
+  }
   if (typeNode.type === 'TSUnionType') {
     const nonNullTypes = typeNode.types.filter(
       t => t.type !== 'TSNullKeyword' && t.type !== 'TSUndefinedKeyword'
@@ -352,6 +355,9 @@ export function isPluginArrayType(
   if (!typeNode) {
     return false;
   }
+  if (typeNode.type === 'TSTypeOperator' && typeNode.operator === 'readonly') {
+    return isPluginArrayType(typeNode.typeAnnotation, checker, getTSNode);
+  }
   if (typeNode.type === 'TSArrayType') {
     return isPluginDescriptorType(typeNode.elementType, checker, getTSNode);
   }
@@ -360,6 +366,9 @@ export function isPluginArrayType(
       typeNode.elementTypes.length > 0 &&
       typeNode.elementTypes.every(t => {
         let elementType = t.type === 'TSNamedTupleMember' ? t.elementType : t;
+        if (elementType.type === 'TSOptionalType') {
+          elementType = elementType.typeAnnotation;
+        }
         if (elementType.type === 'TSRestType') {
           let restTarget: TSESTree.TypeNode =
             elementType.typeAnnotation ??
@@ -369,6 +378,9 @@ export function isPluginArrayType(
           if (restTarget.type === 'TSNamedTupleMember') {
             restTarget = restTarget.elementType;
           }
+          if (restTarget.type === 'TSOptionalType') {
+            restTarget = restTarget.typeAnnotation;
+          }
           return isPluginArrayType(restTarget, checker, getTSNode);
         }
         return isPluginDescriptorType(elementType, checker, getTSNode);
@@ -376,7 +388,20 @@ export function isPluginArrayType(
     );
   }
   if (typeNode.type === 'TSTypeReference') {
-    const name = extractTypeName(typeNode.typeName);
+    let name = extractTypeName(typeNode.typeName);
+    if (
+      checker &&
+      getTSNode &&
+      typeNode.typeName.type === 'Identifier' &&
+      name !== 'Array' &&
+      name !== 'ReadonlyArray' &&
+      name !== 'ArrayLike'
+    ) {
+      const resolved = resolveTypeAlias(typeNode.typeName, checker, getTSNode);
+      if (resolved) {
+        name = resolved;
+      }
+    }
     if (name === 'Array' || name === 'ReadonlyArray' || name === 'ArrayLike') {
       const typeParam = typeNode.typeArguments?.params[0];
       return isPluginDescriptorType(typeParam, checker, getTSNode);

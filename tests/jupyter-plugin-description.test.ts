@@ -143,6 +143,32 @@ ruleTester.run('plugin-description', pluginDescription, {
           }
         ];
       `
+    },
+    {
+      // Readonly array and tuple type operators
+      code: `
+        const plugins: readonly JupyterFrontEndPlugin<any>[] = [
+          {
+            id: 'readonly-plugin',
+            description: 'Readonly plugin',
+            activate: () => {}
+          }
+        ];
+        const tuplePlugins: readonly [JupyterFrontEndPlugin<any>] = [
+          {
+            id: 'readonly-tuple-plugin',
+            description: 'Readonly tuple plugin',
+            activate: () => {}
+          }
+        ];
+        const optionalTuple: [JupyterFrontEndPlugin<any>?] = [
+          {
+            id: 'optional-tuple-plugin',
+            description: 'Optional tuple plugin',
+            activate: () => {}
+          }
+        ];
+      `
     }
   ],
 
@@ -298,6 +324,22 @@ ruleTester.run('plugin-description', pluginDescription, {
         {
           messageId: 'missingDescription',
           data: { pluginId: ' "tuple-plugin"' }
+        }
+      ]
+    },
+    {
+      code: `
+        const plugins: readonly JupyterFrontEndPlugin<any>[] = [
+          {
+            id: 'readonly-plugin-missing-desc',
+            activate: () => {}
+          }
+        ];
+      `,
+      errors: [
+        {
+          messageId: 'missingDescription',
+          data: { pluginId: ' "readonly-plugin-missing-desc"' }
         }
       ]
     }
