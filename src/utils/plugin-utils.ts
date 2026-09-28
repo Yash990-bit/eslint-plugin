@@ -303,6 +303,90 @@ export function typeMentionsJupyterPlugin(
   });
 }
 
+/**
+ * Returns true when a type annotation directly refers to a plugin descriptor
+ * (e.g. `JupyterFrontEndPlugin<T>` or `ServiceManagerPlugin<T>`).
+ */
+export function isPluginDescriptorType(
+  typeNode: TSESTree.TypeNode | undefined | null,
+  checker?: ts.TypeChecker | null,
+  getTSNode?: ((n: TSESTree.Node) => ts.Node | undefined) | null
+): boolean {
+  if (!typeNode) {
+    return false;
+  }
+  if (typeNode.type === 'TSTypeReference') {
+    const name = extractTypeName(typeNode.typeName);
+    if (isPluginTypeName(name)) {
+      return true;
+    }
+    return (
+      !!checker &&
+      !!getTSNode &&
+      typeNode.typeName.type === 'Identifier' &&
+      isPluginTypeName(resolveTypeAlias(typeNode.typeName, checker, getTSNode))
+    );
+  }
+  if (typeNode.type === 'TSUnionType') {
+    const nonNullTypes = typeNode.types.filter(
+      t => t.type !== 'TSNullKeyword' && t.type !== 'TSUndefinedKeyword'
+    );
+    return (
+      nonNullTypes.length > 0 &&
+      nonNullTypes.every(t => isPluginDescriptorType(t, checker, getTSNode))
+    );
+  }
+  return false;
+}
+
+/**
+ * Returns true when a type annotation refers to an array or tuple of plugin descriptors
+ * (e.g. `JupyterFrontEndPlugin<any>[]`, `Array<JupyterFrontEndPlugin<any>>`,
+ * `ReadonlyArray<JupyterFrontEndPlugin<any>>`, or tuple `[JupyterFrontEndPlugin<any>, ...]`).
+ */
+export function isPluginArrayType(
+  typeNode: TSESTree.TypeNode | undefined | null,
+  checker?: ts.TypeChecker | null,
+  getTSNode?: ((n: TSESTree.Node) => ts.Node | undefined) | null
+): boolean {
+  if (!typeNode) {
+    return false;
+  }
+  if (typeNode.type === 'TSArrayType') {
+    return isPluginDescriptorType(typeNode.elementType, checker, getTSNode);
+  }
+  if (typeNode.type === 'TSTupleType') {
+    return (
+      typeNode.elementTypes.length > 0 &&
+      typeNode.elementTypes.every(t =>
+        isPluginDescriptorType(
+          t.type === 'TSNamedTupleMember' ? t.elementType : t,
+          checker,
+          getTSNode
+        )
+      )
+    );
+  }
+  if (typeNode.type === 'TSTypeReference') {
+    const name = extractTypeName(typeNode.typeName);
+    if (name === 'Array' || name === 'ReadonlyArray' || name === 'ArrayLike') {
+      const typeParam = typeNode.typeArguments?.params[0];
+      return isPluginDescriptorType(typeParam, checker, getTSNode);
+    }
+    return false;
+  }
+  if (typeNode.type === 'TSUnionType') {
+    const nonNullTypes = typeNode.types.filter(
+      t => t.type !== 'TSNullKeyword' && t.type !== 'TSUndefinedKeyword'
+    );
+    return (
+      nonNullTypes.length > 0 &&
+      nonNullTypes.every(t => isPluginArrayType(t, checker, getTSNode))
+    );
+  }
+  return false;
+}
+
 /** The namespace and interface which type a MIME renderer extension entry. */
 const MIME_EXTENSION_NAMESPACE = 'IRenderMime';
 const MIME_EXTENSION_TYPE_NAME = 'IExtension';

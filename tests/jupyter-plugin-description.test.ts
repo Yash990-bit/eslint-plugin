@@ -109,6 +109,23 @@ ruleTester.run('plugin-description', pluginDescription, {
           { id: 'cmd-1', label: 'Command 1' }
         ];
       `
+    },
+    {
+      // Generic wrapper like Record<string, JupyterFrontEndPlugin<any>> should not be treated as a plugin container
+      code: `
+        const registry: Record<string, JupyterFrontEndPlugin<any>> = {
+          first: {
+            id: 'first',
+            description: 'ok'
+          }
+        };
+      `
+    },
+    {
+      // Map/Set should not be treated as plugin containers
+      code: `
+        const pluginMap: Map<string, JupyterFrontEndPlugin<any>> = new Map();
+      `
     }
   ],
 

@@ -8,9 +8,9 @@ import { TSESTree } from '@typescript-eslint/types';
 import { ESLintUtils, ParserServices } from '@typescript-eslint/utils';
 import * as ts from 'typescript';
 import {
-  getJupyterPluginKind,
   getPluginId,
-  typeMentionsJupyterPlugin
+  isPluginArrayType,
+  isPluginDescriptorType
 } from '../utils/plugin-utils';
 
 type DescriptionStatus = 'missing' | 'empty' | 'present';
@@ -118,25 +118,26 @@ const jupyterPluginDescription = createRule({
       }
     }
 
-    function checkPluginContainer(
+    function checkContainer(
       containerNode: TSESTree.Node,
-      isPlugin: boolean
+      typeNode: TSESTree.TypeNode | null | undefined
     ): void {
-      if (!isPlugin) {
-        return;
-      }
-
-      const unwrapped = unwrapTypeCast(containerNode);
-      if (unwrapped.type === 'ObjectExpression') {
-        checkPluginObject(unwrapped);
-      } else if (unwrapped.type === 'ArrayExpression') {
-        for (const element of unwrapped.elements) {
-          if (!element) {
-            continue;
-          }
-          const unwrappedElement = unwrapTypeCast(element);
-          if (unwrappedElement.type === 'ObjectExpression') {
-            checkPluginObject(unwrappedElement);
+      if (isPluginDescriptorType(typeNode, checker, getTSNode)) {
+        const unwrapped = unwrapTypeCast(containerNode);
+        if (unwrapped.type === 'ObjectExpression') {
+          checkPluginObject(unwrapped);
+        }
+      } else if (isPluginArrayType(typeNode, checker, getTSNode)) {
+        const unwrapped = unwrapTypeCast(containerNode);
+        if (unwrapped.type === 'ArrayExpression') {
+          for (const element of unwrapped.elements) {
+            if (!element) {
+              continue;
+            }
+            const unwrappedElement = unwrapTypeCast(element);
+            if (unwrappedElement.type === 'ObjectExpression') {
+              checkPluginObject(unwrappedElement);
+            }
           }
         }
       }
@@ -153,20 +154,22 @@ const jupyterPluginDescription = createRule({
             ? varDecl.id.typeAnnotation?.typeAnnotation
             : null;
 
-        const isPlugin =
-          getJupyterPluginKind(varDecl, checker, getTSNode) !== null ||
-          typeMentionsJupyterPlugin(typeAnnotation, checker, getTSNode) ||
-          (varDecl.init.type === 'TSAsExpression' ||
+        let initCastAnnotation: TSESTree.TypeNode | null = null;
+        if (
+          varDecl.init.type === 'TSAsExpression' ||
           varDecl.init.type === 'TSSatisfiesExpression' ||
           varDecl.init.type === 'TSTypeAssertion'
-            ? typeMentionsJupyterPlugin(
-                varDecl.init.typeAnnotation,
-                checker,
-                getTSNode
-              )
-            : false);
+        ) {
+          initCastAnnotation = varDecl.init.typeAnnotation;
+        }
 
-        checkPluginContainer(varDecl.init, isPlugin);
+        const effectiveType =
+          isPluginDescriptorType(typeAnnotation, checker, getTSNode) ||
+          isPluginArrayType(typeAnnotation, checker, getTSNode)
+            ? typeAnnotation
+            : initCastAnnotation;
+
+        checkContainer(varDecl.init, effectiveType);
       },
 
       ExportDefaultDeclaration(node) {
@@ -179,13 +182,7 @@ const jupyterPluginDescription = createRule({
           castAnnotation = node.declaration.typeAnnotation;
         }
 
-        const isPlugin = typeMentionsJupyterPlugin(
-          castAnnotation,
-          checker,
-          getTSNode
-        );
-
-        checkPluginContainer(node.declaration, isPlugin);
+        checkContainer(node.declaration, castAnnotation);
       }
     };
   }
