@@ -169,6 +169,30 @@ ruleTester.run('plugin-description', pluginDescription, {
           }
         ];
       `
+    },
+    {
+      code: `
+        function make(): JupyterFrontEndPlugin<void> {
+          return {
+            id: 'factory-plugin',
+            description: 'Factory plugin description',
+            activate: () => {}
+          };
+        }
+      `
+    },
+    {
+      code: `
+        function make(): JupyterFrontEndPlugin<void>[] {
+          return [
+            {
+              id: 'factory-array-plugin',
+              description: 'Factory array plugin description',
+              activate: () => {}
+            }
+          ];
+        }
+      `
     }
   ],
 
@@ -340,6 +364,40 @@ ruleTester.run('plugin-description', pluginDescription, {
         {
           messageId: 'missingDescription',
           data: { pluginId: ' "readonly-plugin-missing-desc"' }
+        }
+      ]
+    },
+    {
+      code: `
+        function make(): JupyterFrontEndPlugin<void> {
+          return {
+            id: 'factory-plugin',
+            activate: () => {}
+          };
+        }
+      `,
+      errors: [
+        {
+          messageId: 'missingDescription',
+          data: { pluginId: ' "factory-plugin"' }
+        }
+      ]
+    },
+    {
+      code: `
+        function make(): JupyterFrontEndPlugin<void>[] {
+          return [
+            {
+              id: 'factory-array-plugin',
+              activate: () => {}
+            }
+          ];
+        }
+      `,
+      errors: [
+        {
+          messageId: 'missingDescription',
+          data: { pluginId: ' "factory-array-plugin"' }
         }
       ]
     }

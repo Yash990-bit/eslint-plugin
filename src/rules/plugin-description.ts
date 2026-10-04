@@ -5,13 +5,8 @@
 
 import { createRule } from '../utils/create-rule';
 import { TSESTree } from '@typescript-eslint/types';
-import { ESLintUtils, ParserServices } from '@typescript-eslint/utils';
-import * as ts from 'typescript';
-import {
-  getPluginId,
-  isPluginArrayType,
-  isPluginDescriptorType
-} from '../utils/plugin-utils';
+import { getPluginId, getPluginObjectKind } from '../utils/plugin-utils';
+import { getTypeServices } from '../utils/type-services';
 
 type DescriptionStatus = 'missing' | 'empty' | 'present';
 
@@ -51,18 +46,6 @@ function checkDescriptionProperty(
   return 'missing';
 }
 
-function unwrapTypeCast(node: TSESTree.Node): TSESTree.Node {
-  let current = node;
-  while (
-    current.type === 'TSAsExpression' ||
-    current.type === 'TSSatisfiesExpression' ||
-    current.type === 'TSTypeAssertion'
-  ) {
-    current = current.expression;
-  }
-  return current;
-}
-
 const jupyterPluginDescription = createRule({
   name: 'plugin-description',
   meta: {
@@ -82,107 +65,34 @@ const jupyterPluginDescription = createRule({
   defaultOptions: [],
 
   create(context) {
-    let services: ParserServices | null = null;
-    let checker: ts.TypeChecker | null = null;
-
-    try {
-      services = ESLintUtils.getParserServices(context, true);
-      checker = services.program ? services.program.getTypeChecker() : null;
-    } catch {
-      services = null;
-    }
-
-    const getTSNode = services
-      ? (node: TSESTree.Node) => services?.esTreeNodeToTSNodeMap.get(node)
-      : null;
-
-    function checkPluginObject(pluginObj: TSESTree.ObjectExpression): void {
-      const pluginId = getPluginId(
-        pluginObj,
-        context.sourceCode.getScope(pluginObj),
-        checker,
-        getTSNode
-      );
-      const pluginIdSuffix = pluginId ? ` "${pluginId}"` : '';
-
-      const descriptionStatus = checkDescriptionProperty(pluginObj);
-      if (descriptionStatus !== 'present') {
-        context.report({
-          node: pluginObj,
-          messageId:
-            descriptionStatus === 'empty'
-              ? 'emptyDescription'
-              : 'missingDescription',
-          data: { pluginId: pluginIdSuffix }
-        });
-      }
-    }
-
-    function checkContainer(
-      containerNode: TSESTree.Node,
-      typeNode: TSESTree.TypeNode | null | undefined
-    ): void {
-      if (isPluginDescriptorType(typeNode, checker, getTSNode)) {
-        const unwrapped = unwrapTypeCast(containerNode);
-        if (unwrapped.type === 'ObjectExpression') {
-          checkPluginObject(unwrapped);
-        }
-      } else if (isPluginArrayType(typeNode, checker, getTSNode)) {
-        const unwrapped = unwrapTypeCast(containerNode);
-        if (unwrapped.type === 'ArrayExpression') {
-          for (const element of unwrapped.elements) {
-            if (!element) {
-              continue;
-            }
-            const unwrappedElement = unwrapTypeCast(element);
-            if (unwrappedElement.type === 'ObjectExpression') {
-              checkPluginObject(unwrappedElement);
-            }
-          }
-        }
-      }
-    }
+    const { checker, getTSNode } = getTypeServices(context);
 
     return {
-      VariableDeclarator(varDecl) {
-        if (!varDecl.init) {
+      ObjectExpression(node) {
+        const pluginKind = getPluginObjectKind(node, checker, getTSNode);
+        if (pluginKind !== 'frontend' && pluginKind !== 'service-manager') {
           return;
         }
 
-        const typeAnnotation =
-          varDecl.id.type === 'Identifier'
-            ? varDecl.id.typeAnnotation?.typeAnnotation
-            : null;
+        const pluginId = getPluginId(
+          node,
+          context.sourceCode.getScope(node),
+          checker,
+          getTSNode
+        );
+        const pluginIdSuffix = pluginId ? ` "${pluginId}"` : '';
 
-        let initCastAnnotation: TSESTree.TypeNode | null = null;
-        if (
-          varDecl.init.type === 'TSAsExpression' ||
-          varDecl.init.type === 'TSSatisfiesExpression' ||
-          varDecl.init.type === 'TSTypeAssertion'
-        ) {
-          initCastAnnotation = varDecl.init.typeAnnotation;
+        const descriptionStatus = checkDescriptionProperty(node);
+        if (descriptionStatus !== 'present') {
+          context.report({
+            node,
+            messageId:
+              descriptionStatus === 'empty'
+                ? 'emptyDescription'
+                : 'missingDescription',
+            data: { pluginId: pluginIdSuffix }
+          });
         }
-
-        const effectiveType =
-          isPluginDescriptorType(typeAnnotation, checker, getTSNode) ||
-          isPluginArrayType(typeAnnotation, checker, getTSNode)
-            ? typeAnnotation
-            : initCastAnnotation;
-
-        checkContainer(varDecl.init, effectiveType);
-      },
-
-      ExportDefaultDeclaration(node) {
-        let castAnnotation: TSESTree.TypeNode | null = null;
-        if (
-          node.declaration.type === 'TSAsExpression' ||
-          node.declaration.type === 'TSSatisfiesExpression' ||
-          node.declaration.type === 'TSTypeAssertion'
-        ) {
-          castAnnotation = node.declaration.typeAnnotation;
-        }
-
-        checkContainer(node.declaration, castAnnotation);
       }
     };
   }
