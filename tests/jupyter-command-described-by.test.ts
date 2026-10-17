@@ -290,7 +290,7 @@ typeAwareTester.run('command-described-by (type-aware)', commandDescribedBy, {
       code: `
         import { CommandRegistry } from '@lumino/commands';
         declare const appCommands: CommandRegistry;
-        const CMD: 'app:open' = 'app:open';
+        declare const CMD: 'app:open';
         appCommands.addCommand(CMD, {
           execute: () => {}
         });
