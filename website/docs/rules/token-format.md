@@ -65,7 +65,7 @@ This rule has no options.
 <details>
 <summary>Which token IDs are checked?</summary>
 
-The rule checks string literals passed to `new Token(...)`. Variables and template literals are not checked.
+The rule checks the first argument passed to `new Token(...)`. The ID can be a string literal, a template literal, a constant, or (with type information) an expression with a string literal type.
 
 The part after `:` must start with an ASCII letter, `_` or `$` and contain only those characters or digits. A missing `:` is also reported.
 
