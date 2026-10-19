@@ -3,8 +3,14 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
+import { TSESTree } from '@typescript-eslint/types';
 import { getObjectProperties } from '../utils/plugin-utils';
-import { isAddCommandCall } from '../utils/commands';
+import {
+  isAddCommandCall,
+  isPrivateCommandRegistry,
+  resolveCommandId
+} from '../utils/commands';
+import { getTypeServices } from '../utils/type-services';
 import { createRule } from '../utils/create-rule';
 
 const jupyterCommandDescribedBy = createRule({
@@ -24,35 +30,20 @@ const jupyterCommandDescribedBy = createRule({
   defaultOptions: [],
 
   create(context) {
+    const { checker, getTSNode } = getTypeServices(context);
+
     return {
       CallExpression(node) {
         // Check if this is <something>.addCommand()
-        if (!isAddCommandCall(node)) {
-          return;
-        }
-
-        // Get the command ID and options
-        if (node.arguments.length < 2) {
+        if (!isAddCommandCall(node) || node.arguments.length < 2) {
           return;
         }
 
         const commandIdArg = node.arguments[0];
         const optionsArg = node.arguments[1];
 
-        // Extract command ID for error message
-        let commandId = 'unknown';
-        if (
-          commandIdArg.type === 'Literal' &&
-          typeof commandIdArg.value === 'string'
-        ) {
-          commandId = commandIdArg.value;
-        } else if (commandIdArg.type === 'Identifier') {
-          commandId = commandIdArg.name;
-        } else if (commandIdArg.type === 'MemberExpression') {
-          // Handle CommandIDs.something pattern
-          if (commandIdArg.property.type === 'Identifier') {
-            commandId = commandIdArg.property.name;
-          }
+        if (commandIdArg.type === 'SpreadElement') {
+          return;
         }
 
         // Options must be an object
@@ -68,20 +59,37 @@ const jupyterCommandDescribedBy = createRule({
           return;
         }
 
-        const describedByProp = properties.get('describedBy');
-
-        if (!describedByProp) {
-          context.report({
-            node,
-            messageId: 'missingDescribedBy',
-            data: { commandId }
-          });
+        if (properties.has('describedBy')) {
           return;
         }
 
-        if (describedByProp.value.type !== 'ObjectExpression') {
+        // A registry created on the spot, such as one backing a context
+        // menu, is never listed or queried alongside the application's.
+        const callee = node.callee as TSESTree.MemberExpression;
+        if (
+          callee.object.type !== 'Super' &&
+          isPrivateCommandRegistry(
+            callee.object,
+            context.sourceCode.getScope(node)
+          )
+        ) {
           return;
         }
+
+        // Extract command ID for error message
+        const commandId =
+          resolveCommandId(
+            commandIdArg,
+            context.sourceCode,
+            checker,
+            getTSNode
+          ) ?? context.sourceCode.getText(commandIdArg);
+
+        context.report({
+          node,
+          messageId: 'missingDescribedBy',
+          data: { commandId }
+        });
       }
     };
   }
