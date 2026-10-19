@@ -46,6 +46,23 @@ const jupyterCommandDescribedBy = createRule({
           return;
         }
 
+        // Options must be an object
+        if (optionsArg.type !== 'ObjectExpression') {
+          return;
+        }
+
+        const properties = getObjectProperties(optionsArg);
+
+        // Check if execute function exists and has parameters
+        const executeProp = properties.get('execute');
+        if (!executeProp || executeProp.value.type === 'Literal') {
+          return;
+        }
+
+        if (properties.has('describedBy')) {
+          return;
+        }
+
         // A registry created on the spot, such as one backing a context
         // menu, is never listed or queried alongside the application's.
         const callee = node.callee as TSESTree.MemberExpression;
@@ -60,56 +77,19 @@ const jupyterCommandDescribedBy = createRule({
         }
 
         // Extract command ID for error message
-        const resolvedId = resolveCommandId(
-          commandIdArg,
-          context.sourceCode,
-          checker,
-          getTSNode
-        );
-        let commandId = resolvedId ?? 'unknown';
-        if (resolvedId === null) {
-          if (
-            commandIdArg.type === 'Literal' &&
-            typeof commandIdArg.value === 'string'
-          ) {
-            commandId = commandIdArg.value;
-          } else if (commandIdArg.type === 'Identifier') {
-            commandId = commandIdArg.name;
-          } else if (
-            commandIdArg.type === 'MemberExpression' &&
-            commandIdArg.property.type === 'Identifier'
-          ) {
-            commandId = commandIdArg.property.name;
-          }
-        }
+        const commandId =
+          resolveCommandId(
+            commandIdArg,
+            context.sourceCode,
+            checker,
+            getTSNode
+          ) ?? context.sourceCode.getText(commandIdArg);
 
-        // Options must be an object
-        if (optionsArg.type !== 'ObjectExpression') {
-          return;
-        }
-
-        const properties = getObjectProperties(optionsArg);
-
-        // Check if execute function exists and has parameters
-        const executeProp = properties.get('execute');
-        if (!executeProp || executeProp.value.type === 'Literal') {
-          return;
-        }
-
-        const describedByProp = properties.get('describedBy');
-
-        if (!describedByProp) {
-          context.report({
-            node,
-            messageId: 'missingDescribedBy',
-            data: { commandId }
-          });
-          return;
-        }
-
-        if (describedByProp.value.type !== 'ObjectExpression') {
-          return;
-        }
+        context.report({
+          node,
+          messageId: 'missingDescribedBy',
+          data: { commandId }
+        });
       }
     };
   }

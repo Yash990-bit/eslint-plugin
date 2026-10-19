@@ -53,10 +53,14 @@ The schema-based argument description is also used programmatically in JupyterLa
 <details>
 <summary>Which commands are checked?</summary>
 
+The rule checks calls to `.addCommand(id, options)` where `options` is written
+inline as an object literal that defines an `execute` function.
+
 Commands added to a registry the code creates itself are not checked, such as
 `const commands = new CommandRegistry()` behind a context menu. That registry is
 never listed or queried alongside the application's, so argument descriptions
-are not required.
+are not required. This covers a variable or a class field (`this._commands`)
+that is only ever assigned `new CommandRegistry()`.
 
 </details>
 

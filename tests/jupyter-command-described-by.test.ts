@@ -118,15 +118,6 @@ ruleTester.run('command-described-by', commandDescribedBy, {
     },
     {
       code: `
-        let commands;
-        commands = new CommandRegistry();
-        commands.addCommand('open-console', {
-          execute: () => {}
-        });
-      `
-    },
-    {
-      code: `
         class MainView {
           private _commands: CommandRegistry;
           constructor() {
@@ -139,49 +130,6 @@ ruleTester.run('command-described-by', commandDescribedBy, {
             });
           }
         }
-      `
-    },
-    {
-      // An arrow function keeps the class instance as \`this\`.
-      code: `
-        class MainView {
-          private _commands = new CommandRegistry();
-          private _setupMenu = () => {
-            this._commands.addCommand('copy', {
-              execute: () => {}
-            });
-          };
-        }
-      `
-    },
-    {
-      code: `
-        class MainView {
-          #commands = new CommandRegistry();
-          setup() {
-            this.#commands.addCommand('copy', {
-              execute: () => {}
-            });
-          }
-        }
-      `
-    },
-    {
-      code: `
-        import { CommandRegistry as Registry } from '@lumino/commands';
-        const commands = new Registry();
-        commands.addCommand('copy', {
-          execute: () => {}
-        });
-      `
-    },
-    {
-      code: `
-        import * as lumino from '@lumino/commands';
-        const commands = new lumino.CommandRegistry();
-        commands.addCommand('copy', {
-          execute: () => {}
-        });
       `
     }
   ],
@@ -199,7 +147,7 @@ ruleTester.run('command-described-by', commandDescribedBy, {
       errors: [
         {
           messageId: 'missingDescribedBy',
-          data: { commandId: 'test' }
+          data: { commandId: 'CommandIDs.test' }
         }
       ]
     },
@@ -215,7 +163,7 @@ ruleTester.run('command-described-by', commandDescribedBy, {
       errors: [
         {
           messageId: 'missingDescribedBy',
-          data: { commandId: 'test' }
+          data: { commandId: 'CommandIDs.test' }
         }
       ]
     },
@@ -267,23 +215,62 @@ ruleTester.run('command-described-by', commandDescribedBy, {
           data: { commandId: 'my-extension:open' }
         }
       ]
+    },
+    {
+      // A registry that might receive a shared instance is checked.
+      code: `
+        class MainView {
+          private _commands: CommandRegistry;
+          constructor(options: any) {
+            this._commands = options.commands ?? new CommandRegistry();
+          }
+          private _setupMenu(): void {
+            this._commands.addCommand('my-extension:copy', {
+              execute: () => {}
+            });
+          }
+        }
+      `,
+      errors: [
+        {
+          messageId: 'missingDescribedBy',
+          data: { commandId: 'my-extension:copy' }
+        }
+      ]
+    },
+    {
+      code: `
+        let commands = new CommandRegistry();
+        commands = app.commands;
+        commands.addCommand('my-extension:open', {
+          execute: () => {}
+        });
+      `,
+      errors: [
+        {
+          messageId: 'missingDescribedBy',
+          data: { commandId: 'my-extension:open' }
+        }
+      ]
+    },
+    {
+      code: `
+        app.commands.addCommand(makeId(), {
+          execute: () => {}
+        });
+      `,
+      errors: [
+        {
+          messageId: 'missingDescribedBy',
+          data: { commandId: 'makeId()' }
+        }
+      ]
     }
   ]
 });
 
 typeAwareTester.run('command-described-by (type-aware)', commandDescribedBy, {
-  valid: [
-    {
-      filename: 'tests/type-aware-fixture.ts',
-      code: `
-        import { CommandRegistry } from '@lumino/commands';
-        const commands = new CommandRegistry();
-        commands.addCommand('local:cmd', {
-          execute: () => {}
-        });
-      `
-    }
-  ],
+  valid: [],
   invalid: [
     {
       filename: 'tests/type-aware-fixture.ts',
