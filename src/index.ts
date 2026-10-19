@@ -36,6 +36,10 @@ const { name, version } = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
 ) as { name: string; version: string };
 
+// Filled in below once `plugin` exists, so that `configs.recommended` registers
+// the plugin itself and works without a separate `plugins` entry.
+const plugins: Record<string, object> = {};
+
 const plugin = {
   meta: {
     name,
@@ -71,6 +75,7 @@ const plugin = {
   },
   configs: {
     recommended: [
+      { plugins },
       {
         files: ['**/*.js', '**/*.ts', '**/*.jsx', '**/*.tsx'],
         rules: {
@@ -164,6 +169,8 @@ const plugin = {
     }
   }
 };
+
+plugins.jupyter = plugin;
 
 export = plugin as unknown as ESLint.Plugin & {
   rules: Record<string, Rule.RuleModule>;
