@@ -55,10 +55,7 @@ ruleTester.run('token-format', tokenFormat, {
     },
     {
       // Unresolved dynamic variable is skipped
-      code: `
-        declare const myTokenId: string;
-        new Token(myTokenId);
-      `
+      code: `new Token(myTokenId)`
     },
     {
       // Static template literal with valid symbol
