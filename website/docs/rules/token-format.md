@@ -69,8 +69,7 @@ The rule checks the first argument of `new Token(...)`. The ID can be a
 string literal or assembled from constant strings:
 
 - a template literal, a `+` concatenation or a `const`;
-- a member of a `const` object, or of a namespace or enum declared in the same
-  file;
+- a member of a `const` object;
 - with type information, anything whose type is a string literal type, such as
   a `const` imported from another module.
 
