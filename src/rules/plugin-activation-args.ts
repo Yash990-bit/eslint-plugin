@@ -21,7 +21,6 @@ interface ActivateFunctionInfo {
   paramNames: string[];
   paramTypes: (string | null)[];
   paramNodes: (TSESTree.Identifier | null)[];
-  paramHasDefaultNull: boolean[];
 }
 
 interface RequiresOptionalInfo {
@@ -53,14 +52,12 @@ function extractFunctionInfo(
   const paramNames: string[] = [];
   const paramTypes: (string | null)[] = [];
   const paramNodes: (TSESTree.Identifier | null)[] = [];
-  const paramHasDefaultNull: boolean[] = [];
 
   for (const param of fn.params) {
     if (param.type === 'Identifier') {
       paramNames.push(param.name);
       paramTypes.push(extractParameterType(param));
       paramNodes.push(param);
-      paramHasDefaultNull.push(false);
     } else if (
       param.type === 'AssignmentPattern' &&
       param.left.type === 'Identifier'
@@ -68,15 +65,10 @@ function extractFunctionInfo(
       paramNames.push(param.left.name);
       paramTypes.push(extractParameterType(param.left));
       paramNodes.push(param.left);
-      const isNullOrDefault =
-        (param.right.type === 'Literal' && param.right.value === null) ||
-        (param.right.type === 'Identifier' && param.right.name === 'undefined');
-      paramHasDefaultNull.push(isNullOrDefault);
     } else {
       paramNames.push('__pattern__');
       paramTypes.push(null);
       paramNodes.push(null);
-      paramHasDefaultNull.push(false);
     }
   }
 
@@ -84,8 +76,7 @@ function extractFunctionInfo(
     node,
     paramNames,
     paramTypes,
-    paramNodes,
-    paramHasDefaultNull
+    paramNodes
   };
 }
 
@@ -327,11 +318,8 @@ const jupyterPluginActivationArgs = createRule({
      * undefined. Falls back to a syntactic AST check when the checker is
      * unavailable.
      */
-    function isParamNullable(
-      paramNode: TSESTree.Identifier,
-      hasDefaultNull = false
-    ): boolean {
-      if (hasDefaultNull || paramNode.optional) return true; // param?: T or param = null implies nullable
+    function isParamNullable(paramNode: TSESTree.Identifier): boolean {
+      if (paramNode.optional) return true; // param?: T always implies | undefined
       if (checker) {
         try {
           const tsNode = services?.esTreeNodeToTSNodeMap.get(paramNode);
@@ -556,9 +544,7 @@ const jupyterPluginActivationArgs = createRule({
               }
             } else if (i >= requires.length && paramNode) {
               // Token matched and is optional — param must be nullable.
-              const hasDefaultNull =
-                activateInfo.paramHasDefaultNull[i + 1] ?? false;
-              if (!isParamNullable(paramNode, hasDefaultNull)) {
+              if (!isParamNullable(paramNode)) {
                 context.report({
                   node: activateInfo.node,
                   messageId: 'optionalNotNullable',
