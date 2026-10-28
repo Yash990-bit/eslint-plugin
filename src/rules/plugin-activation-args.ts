@@ -21,6 +21,7 @@ interface ActivateFunctionInfo {
   paramNames: string[];
   paramTypes: (string | null)[];
   paramNodes: (TSESTree.Identifier | null)[];
+  paramHasDefaultNull: boolean[];
 }
 
 interface RequiresOptionalInfo {
@@ -49,25 +50,42 @@ function extractFunctionInfo(
     | TSESTree.FunctionExpression
     | TSESTree.FunctionDeclaration
 ): ActivateFunctionInfo {
-  const params = fn.params.filter(
-    (param): param is TSESTree.Identifier => param.type === 'Identifier'
-  );
+  const paramNames: string[] = [];
+  const paramTypes: (string | null)[] = [];
+  const paramNodes: (TSESTree.Identifier | null)[] = [];
+  const paramHasDefaultNull: boolean[] = [];
 
-  const paramNames = params.map(param => param.name);
-
-  const paramTypes = params.map(param =>
-    param.type === 'Identifier' ? extractParameterType(param) : null
-  );
-
-  const paramNodes = params.map(param =>
-    param.type === 'Identifier' ? param : null
-  );
+  for (const param of fn.params) {
+    if (param.type === 'Identifier') {
+      paramNames.push(param.name);
+      paramTypes.push(extractParameterType(param));
+      paramNodes.push(param);
+      paramHasDefaultNull.push(false);
+    } else if (
+      param.type === 'AssignmentPattern' &&
+      param.left.type === 'Identifier'
+    ) {
+      paramNames.push(param.left.name);
+      paramTypes.push(extractParameterType(param.left));
+      paramNodes.push(param.left);
+      const isNullOrDefault =
+        (param.right.type === 'Literal' && param.right.value === null) ||
+        (param.right.type === 'Identifier' && param.right.name === 'undefined');
+      paramHasDefaultNull.push(isNullOrDefault);
+    } else {
+      paramNames.push('__pattern__');
+      paramTypes.push(null);
+      paramNodes.push(null);
+      paramHasDefaultNull.push(false);
+    }
+  }
 
   return {
     node,
     paramNames,
     paramTypes,
-    paramNodes
+    paramNodes,
+    paramHasDefaultNull
   };
 }
 
@@ -309,8 +327,11 @@ const jupyterPluginActivationArgs = createRule({
      * undefined. Falls back to a syntactic AST check when the checker is
      * unavailable.
      */
-    function isParamNullable(paramNode: TSESTree.Identifier): boolean {
-      if (paramNode.optional) return true; // param?: T always implies | undefined
+    function isParamNullable(
+      paramNode: TSESTree.Identifier,
+      hasDefaultNull = false
+    ): boolean {
+      if (hasDefaultNull || paramNode.optional) return true; // param?: T or param = null implies nullable
       if (checker) {
         try {
           const tsNode = services?.esTreeNodeToTSNodeMap.get(paramNode);
@@ -535,7 +556,9 @@ const jupyterPluginActivationArgs = createRule({
               }
             } else if (i >= requires.length && paramNode) {
               // Token matched and is optional — param must be nullable.
-              if (!isParamNullable(paramNode)) {
+              const hasDefaultNull =
+                activateInfo.paramHasDefaultNull[i + 1] ?? false;
+              if (!isParamNullable(paramNode, hasDefaultNull)) {
                 context.report({
                   node: activateInfo.node,
                   messageId: 'optionalNotNullable',
