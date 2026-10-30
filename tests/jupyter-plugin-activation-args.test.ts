@@ -46,6 +46,22 @@ nonTypeAwareTester.run(
             activate: (app: JupyterFrontEnd, translator: ITranslator | null = null) => {}
           };
         `
+      },
+      {
+        code: `
+          const plugin: JupyterFrontEndPlugin<void> = {
+            id: 'test-plugin',
+            activate: ({ commands }: JupyterFrontEnd) => {}
+          };
+        `
+      },
+      {
+        code: `
+          const plugin: JupyterFrontEndPlugin<void> = {
+            id: 'test-plugin',
+            activate: (app: JupyterFrontEnd, ...rest: unknown[]) => {}
+          };
+        `
       }
     ],
     invalid: [
@@ -722,6 +738,41 @@ ruleTester.run('plugin-activation-args', pluginActivationArgs, {
           id: 'test-plugin',
           optional: [ITranslator],
           activate
+        };
+      `
+    },
+    {
+      // Destructured parameter in activate function is skipped
+      filename: 'tests/type-aware-fixture.ts',
+      code: `
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'test-plugin',
+          activate: ({ commands }: JupyterFrontEnd) => {}
+        };
+      `
+    },
+    {
+      // Rest parameter in activate function is skipped
+      filename: 'tests/type-aware-fixture.ts',
+      code: `
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'test-plugin',
+          activate: (app: JupyterFrontEnd, ...rest: unknown[]) => {}
+        };
+      `
+    },
+    {
+      // Destructured token parameter in activate function is skipped
+      filename: 'tests/type-aware-fixture.ts',
+      code: `
+        import { INotebookTracker } from './fixtures/types';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'test-plugin',
+          requires: [INotebookTracker],
+          activate: (
+            app: JupyterFrontEnd,
+            { currentWidget }: INotebookTracker
+          ) => {}
         };
       `
     }

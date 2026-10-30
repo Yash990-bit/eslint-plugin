@@ -48,28 +48,21 @@ function extractFunctionInfo(
     | TSESTree.ArrowFunctionExpression
     | TSESTree.FunctionExpression
     | TSESTree.FunctionDeclaration
-): ActivateFunctionInfo {
+): ActivateFunctionInfo | null {
   const paramNames: string[] = [];
   const paramTypes: (string | null)[] = [];
   const paramNodes: (TSESTree.Identifier | null)[] = [];
 
   for (const param of fn.params) {
-    if (param.type === 'Identifier') {
-      paramNames.push(param.name);
-      paramTypes.push(extractParameterType(param));
-      paramNodes.push(param);
-    } else if (
-      param.type === 'AssignmentPattern' &&
-      param.left.type === 'Identifier'
-    ) {
-      paramNames.push(param.left.name);
-      paramTypes.push(extractParameterType(param.left));
-      paramNodes.push(param.left);
-    } else {
-      paramNames.push('__pattern__');
-      paramTypes.push(null);
-      paramNodes.push(null);
+    const id = param.type === 'AssignmentPattern' ? param.left : param;
+    if (id.type !== 'Identifier') {
+      // A destructured parameter has no name to check, and a rest parameter
+      // has no fixed position, so leave those functions alone.
+      return null;
     }
+    paramNames.push(id.name);
+    paramTypes.push(extractParameterType(id));
+    paramNodes.push(id);
   }
 
   return {
