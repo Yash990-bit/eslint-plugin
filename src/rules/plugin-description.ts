@@ -4,7 +4,7 @@
  */
 
 import { createRule } from '../utils/create-rule';
-import { TSESLint, TSESTree } from '@typescript-eslint/utils';
+import { ASTUtils, TSESLint, TSESTree } from '@typescript-eslint/utils';
 import * as ts from 'typescript';
 import {
   getObjectProperties,
@@ -15,6 +15,24 @@ import {
 import { getTypeServices } from '../utils/type-services';
 
 type DescriptionStatus = 'missing' | 'empty' | 'present';
+
+/**
+ * Checks whether an AST node is an identifier referring to the global `undefined`
+ * (i.e. not shadowed by a local variable or parameter).
+ */
+function isGlobalUndefined(
+  node: TSESTree.Node,
+  scope?: TSESLint.Scope.Scope | null
+): boolean {
+  if (node.type !== 'Identifier' || node.name !== 'undefined') {
+    return false;
+  }
+  if (!scope) {
+    return true;
+  }
+  const variable = ASTUtils.findVariable(scope, node);
+  return !variable || variable.defs.length === 0;
+}
 
 /**
  * Returns whether the object expression has a description property and whether
@@ -53,7 +71,7 @@ function checkDescriptionProperty(
         }
         if (
           prop.value.type === 'Literal' ||
-          (prop.value.type === 'Identifier' && prop.value.name === 'undefined')
+          isGlobalUndefined(prop.value, scope)
         ) {
           return 'empty';
         }

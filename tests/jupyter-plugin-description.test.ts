@@ -316,6 +316,18 @@ ruleTester.run('plugin-description', pluginDescription, {
           activate: () => {}
         };
       `
+    },
+    {
+      // Shadowed undefined parameter as dynamic description is allowed
+      code: `
+        function makePlugin(undefined: string): JupyterFrontEndPlugin<void> {
+          return {
+            id: 'shadowed-undefined-plugin',
+            description: undefined,
+            activate: () => {}
+          };
+        }
+      `
     }
   ],
 
