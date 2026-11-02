@@ -3,6 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
+import * as path from 'path';
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import pluginDescription from '../src/rules/plugin-description';
 
@@ -12,6 +13,21 @@ const ruleTester = new RuleTester({
     parserOptions: {
       ecmaVersion: 2020,
       sourceType: 'module'
+    }
+  }
+});
+
+const typeAwareTester = new RuleTester({
+  languageOptions: {
+    parser: require('@typescript-eslint/parser'),
+    parserOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'module',
+      projectService: {
+        allowDefaultProject: ['tests/*.ts'],
+        defaultProject: 'tsconfig.json'
+      },
+      tsconfigRootDir: path.resolve(__dirname, '..')
     }
   }
 });
@@ -252,6 +268,51 @@ ruleTester.run('plugin-description', pluginDescription, {
         const plugin: Private.JupyterFrontEndPlugin<void> = {
           id: 'private-namespaced-plugin',
           description: 'Private plugin description',
+          activate: () => {}
+        };
+      `
+    },
+    {
+      // Non-empty template literal description
+      code: `
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'template-desc-plugin',
+          description: \`Enhanced notifications for JupyterLab\`,
+          activate: () => {}
+        };
+      `
+    },
+    {
+      // Template literal with constant expression
+      code: `
+        const FEATURE = 'notifications';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'template-expr-plugin',
+          description: \`Enhanced \${FEATURE} for JupyterLab\`,
+          activate: () => {}
+        };
+      `
+    },
+    {
+      // Non-empty constant description
+      code: `
+        const PLUGIN_DESC = 'Provides commands for notebooks.';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'const-desc-plugin',
+          description: PLUGIN_DESC,
+          activate: () => {}
+        };
+      `
+    },
+    {
+      // Dynamic description function call is allowed
+      code: `
+        function getPluginDescription(): string {
+          return 'Dynamic description';
+        }
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'dynamic-desc-plugin',
+          description: getPluginDescription(),
           activate: () => {}
         };
       `
@@ -569,6 +630,157 @@ ruleTester.run('plugin-description', pluginDescription, {
         {
           messageId: 'missingDescription',
           data: { pluginId: ' "sm-plugin-2"' }
+        }
+      ]
+    },
+    {
+      // Empty template literal description
+      code: `
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'empty-template-plugin',
+          description: \`\`,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "empty-template-plugin"' }
+        }
+      ]
+    },
+    {
+      // Whitespace-only template literal description
+      code: `
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'whitespace-template-plugin',
+          description: \`   \`,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "whitespace-template-plugin"' }
+        }
+      ]
+    },
+    {
+      // Empty constant description
+      code: `
+        const EMPTY_DESC = '';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'empty-const-plugin',
+          description: EMPTY_DESC,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "empty-const-plugin"' }
+        }
+      ]
+    },
+    {
+      // Whitespace-only constant description
+      code: `
+        const WS_DESC = '   ';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'ws-const-plugin',
+          description: WS_DESC,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "ws-const-plugin"' }
+        }
+      ]
+    },
+    {
+      // Template literal with empty constant
+      code: `
+        const EMPTY = '';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'template-empty-const-plugin',
+          description: \`\${EMPTY}\`,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "template-empty-const-plugin"' }
+        }
+      ]
+    },
+    {
+      // Identifier undefined as description
+      code: `
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'undefined-desc-plugin',
+          description: undefined,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "undefined-desc-plugin"' }
+        }
+      ]
+    }
+  ]
+});
+
+typeAwareTester.run('plugin-description (type-aware)', pluginDescription, {
+  valid: [
+    {
+      filename: 'tests/type-aware-fixture.ts',
+      code: `
+        declare const validDesc: 'Provides commands for notebooks.';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'type-aware-valid-plugin',
+          description: validDesc,
+          activate: () => {}
+        };
+      `
+    }
+  ],
+  invalid: [
+    {
+      filename: 'tests/type-aware-fixture.ts',
+      code: `
+        declare const emptyDesc: '';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'type-aware-empty-plugin',
+          description: emptyDesc,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "type-aware-empty-plugin"' }
+        }
+      ]
+    },
+    {
+      filename: 'tests/type-aware-fixture.ts',
+      code: `
+        declare const wsDesc: '   ';
+        const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'type-aware-ws-plugin',
+          description: wsDesc,
+          activate: () => {}
+        };
+      `,
+      errors: [
+        {
+          messageId: 'emptyDescription',
+          data: { pluginId: ' "type-aware-ws-plugin"' }
         }
       ]
     }

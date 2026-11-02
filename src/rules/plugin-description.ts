@@ -4,11 +4,13 @@
  */
 
 import { createRule } from '../utils/create-rule';
-import { TSESTree } from '@typescript-eslint/utils';
+import { TSESLint, TSESTree } from '@typescript-eslint/utils';
+import * as ts from 'typescript';
 import {
   getObjectProperties,
   getPluginId,
-  getPluginObjectKind
+  getPluginObjectKind,
+  resolveStaticString
 } from '../utils/plugin-utils';
 import { getTypeServices } from '../utils/type-services';
 
@@ -19,11 +21,14 @@ type DescriptionStatus = 'missing' | 'empty' | 'present';
  * it is non-empty.
  *
  * - 'missing'  – no description key found
- * - 'empty'    – key exists but its literal value is empty / whitespace-only
- * - 'present'  – key exists with a non-empty value (or a non-literal value)
+ * - 'empty'    – key exists but its static value is empty / whitespace-only
+ * - 'present'  – key exists with a non-empty value (or an unresolved dynamic value)
  */
 function checkDescriptionProperty(
-  obj: TSESTree.ObjectExpression
+  obj: TSESTree.ObjectExpression,
+  scope?: TSESLint.Scope.Scope | null,
+  checker?: ts.TypeChecker | null,
+  getTSNode?: ((n: TSESTree.Node) => ts.Node | undefined) | null
 ): DescriptionStatus {
   for (const prop of obj.properties) {
     if (prop.type === 'Property') {
@@ -37,11 +42,20 @@ function checkDescriptionProperty(
         keyName = prop.key.value;
       }
       if (keyName === 'description') {
-        if (prop.value.type === 'Literal') {
-          const value = prop.value.value;
-          return typeof value === 'string' && value.trim().length > 0
-            ? 'present'
-            : 'empty';
+        const resolved = resolveStaticString(
+          prop.value,
+          scope,
+          checker,
+          getTSNode
+        );
+        if (resolved !== null) {
+          return resolved.trim().length > 0 ? 'present' : 'empty';
+        }
+        if (
+          prop.value.type === 'Literal' ||
+          (prop.value.type === 'Identifier' && prop.value.name === 'undefined')
+        ) {
+          return 'empty';
         }
         return 'present';
       }
@@ -95,7 +109,12 @@ const jupyterPluginDescription = createRule({
         );
         const pluginIdSuffix = pluginId ? ` "${pluginId}"` : '';
 
-        const descriptionStatus = checkDescriptionProperty(node);
+        const descriptionStatus = checkDescriptionProperty(
+          node,
+          context.sourceCode.getScope(node),
+          checker,
+          getTSNode
+        );
         if (descriptionStatus !== 'present') {
           context.report({
             node,

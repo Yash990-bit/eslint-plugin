@@ -80,3 +80,19 @@ Plugins are found in typed variables and arrays or tuples, type assertions (`as`
 ## Options
 
 This rule has no options.
+
+<details>
+<summary>Which descriptions are checked?</summary>
+
+The description can be a string literal or assembled from constant strings:
+
+- a template literal, a `+` concatenation or a `const`;
+- a member of a `const` object;
+- with type information, anything whose type is a string literal type, such as
+  a `const` imported from another module.
+
+An empty or whitespace-only string is reported. A description the rule cannot
+resolve to a string, such as a function call whose return type is plain
+`string`, is not checked.
+
+</details>
