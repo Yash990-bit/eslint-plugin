@@ -24,6 +24,8 @@ const tokenFormat = createRule({
     messages: {
       missingColon:
         'Token id "{{ tokenId }}" must follow the format "<package>:<TokenSymbol>" (no colon found).',
+      emptyPackage:
+        'Token id "{{ tokenId }}" is missing a package name; use the "<package>:<TokenSymbol>" format.',
       invalidTokenSymbol:
         'Token id "{{ tokenId }}" has an invalid symbol "{{ symbol }}". ' +
         'The part after ":" must be a valid JavaScript identifier.'
@@ -67,6 +69,16 @@ const tokenFormat = createRule({
           context.report({
             node: firstArg,
             messageId: 'missingColon',
+            data: { tokenId }
+          });
+          return;
+        }
+
+        const packagePart = tokenId.slice(0, colonIndex);
+        if (packagePart.trim().length === 0) {
+          context.report({
+            node: firstArg,
+            messageId: 'emptyPackage',
             data: { tokenId }
           });
           return;

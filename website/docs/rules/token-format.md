@@ -40,6 +40,20 @@ new Token<IFooService>('IFooService', 'A foo service');
 new Token<IFooService>('@test/pkg:IFooService', 'A foo service');
 ```
 
+### Include the package name
+
+**Incorrect**
+
+```ts
+new Token<IFooService>(':IFooService', 'A foo service');
+```
+
+**Correct**
+
+```ts
+new Token<IFooService>('@test/pkg:IFooService', 'A foo service');
+```
+
 ### Do not start the symbol with a digit
 
 **Incorrect**
@@ -77,6 +91,6 @@ An ID the rule cannot resolve to a string, such as a function call whose return
 type is plain `string`, is not checked.
 
 The part after `:` must start with an ASCII letter, `_` or `$` and contain only
-those characters or digits. A missing `:` is also reported.
+those characters or digits. A missing `:` or an empty package name before `:` is also reported.
 
 </details>

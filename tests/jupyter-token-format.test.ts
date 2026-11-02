@@ -106,6 +106,36 @@ ruleTester.run('token-format', tokenFormat, {
       ]
     },
     {
+      // Leading colon (empty package name)
+      code: `new Token<void>(':IFoo')`,
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: { tokenId: ':IFoo' }
+        }
+      ]
+    },
+    {
+      // Whitespace-only package name
+      code: `new Token<void>('   :IFoo')`,
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: { tokenId: '   :IFoo' }
+        }
+      ]
+    },
+    {
+      // Colon only (empty package and empty symbol)
+      code: `new Token<void>(':')`,
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: { tokenId: ':' }
+        }
+      ]
+    },
+    {
       // Empty symbol after colon
       code: `new Token<void>('@test/pkg:')`,
       errors: [
@@ -169,6 +199,42 @@ ruleTester.run('token-format', tokenFormat, {
           }
         }
       ]
+    },
+    {
+      // Template literal with empty package
+      code: 'new Token<IFoo>(`:IFoo`)',
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: { tokenId: ':IFoo' }
+        }
+      ]
+    },
+    {
+      // Template literal with variable empty package
+      code: `
+        const PKG = '';
+        new Token<IFoo>(\`\${PKG}:IFoo\`);
+      `,
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: { tokenId: ':IFoo' }
+        }
+      ]
+    },
+    {
+      // Constant string with empty package
+      code: `
+        const TOKEN_ID = ':IFoo';
+        new Token<IFoo>(TOKEN_ID);
+      `,
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: { tokenId: ':IFoo' }
+        }
+      ]
     }
   ]
 });
@@ -196,6 +262,21 @@ typeAwareTester.run('token-format (type-aware)', tokenFormat, {
           data: {
             tokenId: '@test/pkg:kebab-case',
             symbol: 'kebab-case'
+          }
+        }
+      ]
+    },
+    {
+      code: `
+        declare const id: ':IFoo';
+        new Token<IFoo>(id);
+      `,
+      filename: 'tests/type-aware-fixture.ts',
+      errors: [
+        {
+          messageId: 'emptyPackage',
+          data: {
+            tokenId: ':IFoo'
           }
         }
       ]
