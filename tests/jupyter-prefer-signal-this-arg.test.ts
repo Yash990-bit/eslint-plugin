@@ -276,6 +276,24 @@ ruleTester.run('prefer-signal-this-arg', preferSignalThisArg, {
       options: [{ longLivedTypes: ['IMyOwnService'] }]
     },
     {
+      // With extendDefaultLongLivedTypes: false, longLivedTypes replaces the built-in list.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        class Watcher extends Widget {
+          wire(registry: ISettingRegistry): void {
+            registry.pluginChanged.connect(() => this._onChanged());
+          }
+          private _onChanged(): void {}
+        }
+      `,
+      options: [
+        {
+          longLivedTypes: ['IMyOwnService'],
+          extendDefaultLongLivedTypes: false
+        }
+      ]
+    },
+    {
       // `this` in a static member is the class object; passing it would not
       // register the instance that Signal.clearData(this) clears.
       filename: 'tests/type-aware-fixture.ts',
@@ -549,6 +567,33 @@ ruleTester.run('prefer-signal-this-arg', preferSignalThisArg, {
             }
           ]
         }
+      ]
+    },
+    {
+      // With extendDefaultLongLivedTypes: true, both custom types and built-in defaults require thisArg.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        interface ICustomAppService {
+          readonly changed: ISignal<ICustomAppService, void>;
+        }
+        class Watcher extends Widget {
+          wire(service: ICustomAppService, registry: ISettingRegistry): void {
+            service.changed.connect(() => this._onServiceChanged());
+            registry.pluginChanged.connect(() => this._onPluginChanged());
+          }
+          private _onServiceChanged(): void {}
+          private _onPluginChanged(): void {}
+        }
+      `,
+      options: [
+        {
+          longLivedTypes: ['ICustomAppService'],
+          extendDefaultLongLivedTypes: true
+        }
+      ],
+      errors: [
+        { messageId: 'preferThisArg', suggestions: 1 },
+        { messageId: 'preferThisArg', suggestions: 1 }
       ]
     }
   ]

@@ -135,9 +135,11 @@ A matching one-argument `disconnect(callback)` already provides cleanup and is l
 
 ## Options
 
-- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. **Replaces** the built-in list when provided. The default is:
+- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. Added to the built-in defaults when `extendDefaultLongLivedTypes` is `true`, or replaces them when `false`. The default list is:
 
   `CommandRegistry`, `IDebugger`, `IDocumentManager`, `ILSPConnection`, `ILabShell`, `ILanguageServerManager`, `IRenderMimeRegistry`, `ISessionConnection`, `ISessionContext`, `ISettingRegistry`, `IShell`, `IStateDB`, `IThemeManager`, `ServiceManager`
+
+- `extendDefaultLongLivedTypes` (`boolean`, default `false`): whether `longLivedTypes` extends the built-in defaults instead of replacing them.
 
 ```json
 {

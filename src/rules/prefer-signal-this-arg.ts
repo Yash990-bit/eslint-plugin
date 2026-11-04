@@ -18,13 +18,13 @@ import {
 } from '../utils/signals';
 import {
   ClassOwnershipFacts,
-  DEFAULT_LONG_LIVED_TYPES,
   analyzeSender,
   buildSenderChain,
   classifyCallbackShape,
   collectClassOwnershipFacts,
   hasMatchingDisconnect,
-  isSelfTerminatingSignal
+  isSelfTerminatingSignal,
+  resolveLongLivedTypes
 } from '../utils/signal-lifetime';
 
 const preferSignalThisArg = createRule({
@@ -55,7 +55,13 @@ const preferSignalThisArg = createRule({
               type: 'string'
             },
             description:
-              'Type names treated as application-lifetime services. Replaces the built-in list when provided.'
+              'Type names treated as application-lifetime services. Added to the built-in defaults when extendDefaultLongLivedTypes is true, or replaces them when false.'
+          },
+          extendDefaultLongLivedTypes: {
+            type: 'boolean',
+            default: false,
+            description:
+              'Whether longLivedTypes extends the built-in defaults instead of replacing them.'
           }
         },
         additionalProperties: false
@@ -64,13 +70,15 @@ const preferSignalThisArg = createRule({
   },
   defaultOptions: [
     {
-      longLivedTypes: undefined as string[] | undefined
+      longLivedTypes: undefined as string[] | undefined,
+      extendDefaultLongLivedTypes: false
     }
   ],
 
   create(context, [options]) {
-    const longLivedTypes = new Set(
-      options.longLivedTypes ?? DEFAULT_LONG_LIVED_TYPES
+    const longLivedTypes = resolveLongLivedTypes(
+      options.longLivedTypes,
+      options.extendDefaultLongLivedTypes
     );
 
     const { services, checker } = getTypeServices(context);

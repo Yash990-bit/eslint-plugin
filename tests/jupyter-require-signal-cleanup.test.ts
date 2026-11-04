@@ -316,6 +316,26 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
       options: [{ longLivedTypes: ['IMyOwnService'] }]
     },
     {
+      // With extendDefaultLongLivedTypes: false, longLivedTypes replaces the built-in list.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        class Watcher implements IDisposable {
+          constructor(registry: ISettingRegistry) {
+            registry.pluginChanged.connect(this._onChanged, this);
+          }
+          readonly isDisposed = false;
+          dispose(): void {}
+          private _onChanged(): void {}
+        }
+      `,
+      options: [
+        {
+          longLivedTypes: ['IMyOwnService'],
+          extendDefaultLongLivedTypes: false
+        }
+      ]
+    },
+    {
       // `this` in a static member is the class object, not an instance. The
       // connection is made once rather than per instance, and an instance
       // dispose() is not where it would be undone.
@@ -582,6 +602,41 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
         {
           messageId: 'serviceOutlivesReceiver',
           data: { sender: 'service', typeName: 'IMyOwnService' }
+        }
+      ]
+    },
+    {
+      // With extendDefaultLongLivedTypes: true, both custom types and built-in defaults are checked.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        interface ICustomAppService {
+          readonly changed: ISignal<ICustomAppService, void>;
+        }
+        class Watcher implements IDisposable {
+          constructor(service: ICustomAppService, registry: ISettingRegistry) {
+            service.changed.connect(this._onServiceChanged, this);
+            registry.pluginChanged.connect(this._onPluginChanged, this);
+          }
+          readonly isDisposed = false;
+          dispose(): void {}
+          private _onServiceChanged(): void {}
+          private _onPluginChanged(): void {}
+        }
+      `,
+      options: [
+        {
+          longLivedTypes: ['ICustomAppService'],
+          extendDefaultLongLivedTypes: true
+        }
+      ],
+      errors: [
+        {
+          messageId: 'serviceOutlivesReceiver',
+          data: { sender: 'service', typeName: 'ICustomAppService' }
+        },
+        {
+          messageId: 'serviceOutlivesReceiver',
+          data: { sender: 'registry', typeName: 'ISettingRegistry' }
         }
       ]
     }

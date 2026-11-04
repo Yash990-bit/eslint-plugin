@@ -165,9 +165,11 @@ This rule checks connections made with `this` as the receiver. For connections w
 
 ## Options
 
-- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. **Replaces** the built-in list when provided. The default is:
+- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. Added to the built-in defaults when `extendDefaultLongLivedTypes` is `true`, or replaces them when `false`. The default list is:
 
   `CommandRegistry`, `IDebugger`, `IDocumentManager`, `ILSPConnection`, `ILabShell`, `ILanguageServerManager`, `IRenderMimeRegistry`, `ISessionConnection`, `ISessionContext`, `ISettingRegistry`, `IShell`, `IStateDB`, `IThemeManager`, `ServiceManager`
+
+- `extendDefaultLongLivedTypes` (`boolean`, default `false`): whether `longLivedTypes` extends the built-in defaults instead of replacing them.
 
 - `additionalCleanupMethods` (`string[]`, default `[]`): additional method names (besides `disconnect`) that count as cleanup evidence when called anywhere in the class. Use this to allowlist project-specific teardown idioms.
 
