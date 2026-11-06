@@ -148,8 +148,7 @@ Extending the defaults, the common case:
   "jupyter/prefer-signal-this-arg": [
     "warn",
     {
-      "longLivedTypes": ["IMyAppService"],
-      "extendDefaultLongLivedTypes": true
+      "longLivedTypes": ["IMyAppService"]
     }
   ]
 }

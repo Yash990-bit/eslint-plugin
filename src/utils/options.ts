@@ -7,10 +7,9 @@
  * Resolves a configurable name list option.
  *
  * A user-supplied list is *added* to the built-in defaults, so a project only
- * has to name its own helpers rather than restate this plugin's list. Passing
+ * has to name its own entries rather than restate this plugin's list. Passing
  * the matching `extendDefault...` option as `false` drops the defaults, whether
- * or not a replacement list is given, which is also how to ask for the
- * strictest possible checking.
+ * or not a replacement list is given.
  */
 export function resolveNameListOption(
   provided: readonly string[] | undefined,
@@ -23,4 +22,3 @@ export function resolveNameListOption(
   }
   return new Set(names);
 }
-

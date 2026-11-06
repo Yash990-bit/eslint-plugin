@@ -181,7 +181,6 @@ Extending the defaults, the common case:
     "warn",
     {
       "longLivedTypes": ["IMyAppService"],
-      "extendDefaultLongLivedTypes": true,
       "additionalCleanupMethods": ["_stopObserving"]
     }
   ]
