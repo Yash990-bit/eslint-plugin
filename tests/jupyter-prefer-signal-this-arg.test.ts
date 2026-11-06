@@ -263,7 +263,7 @@ ruleTester.run('prefer-signal-this-arg', preferSignalThisArg, {
       `
     },
     {
-      // longLivedTypes replaces the built-in list.
+      // longLivedTypes replaces the built-in list when extendDefaultLongLivedTypes is false.
       filename: 'tests/type-aware-fixture.ts',
       code: `${PRELUDE}
         class Watcher extends Widget {
@@ -273,7 +273,25 @@ ruleTester.run('prefer-signal-this-arg', preferSignalThisArg, {
           private _onChanged(): void {}
         }
       `,
-      options: [{ longLivedTypes: ['IMyOwnService'] }]
+      options: [
+        {
+          longLivedTypes: ['IMyOwnService'],
+          extendDefaultLongLivedTypes: false
+        }
+      ]
+    },
+    {
+      // With extendDefaultLongLivedTypes: false and no custom types, defaults are dropped entirely.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        class Watcher extends Widget {
+          wire(registry: ISettingRegistry): void {
+            registry.pluginChanged.connect(() => this._onChanged());
+          }
+          private _onChanged(): void {}
+        }
+      `,
+      options: [{ extendDefaultLongLivedTypes: false }]
     },
     {
       // `this` in a static member is the class object; passing it would not
@@ -316,7 +334,12 @@ ruleTester.run('prefer-signal-this-arg', preferSignalThisArg, {
           private _shell: IShell;
         }
       `,
-      options: [{ longLivedTypes: ['OwnService'] }]
+      options: [
+        {
+          longLivedTypes: ['OwnService'],
+          extendDefaultLongLivedTypes: false
+        }
+      ]
     },
     {
       // The same for the model/view argument: a class that is itself named
@@ -549,6 +572,29 @@ ruleTester.run('prefer-signal-this-arg', preferSignalThisArg, {
             }
           ]
         }
+      ]
+    },
+    {
+      // By default, custom longLivedTypes extend built-in defaults. Both custom types
+      // and built-in defaults require thisArg.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        interface ICustomAppService {
+          readonly changed: ISignal<ICustomAppService, void>;
+        }
+        class Watcher extends Widget {
+          wire(service: ICustomAppService, registry: ISettingRegistry): void {
+            service.changed.connect(() => this._onServiceChanged());
+            registry.pluginChanged.connect(() => this._onPluginChanged());
+          }
+          private _onServiceChanged(): void {}
+          private _onPluginChanged(): void {}
+        }
+      `,
+      options: [{ longLivedTypes: ['ICustomAppService'] }],
+      errors: [
+        { messageId: 'preferThisArg', suggestions: 1 },
+        { messageId: 'preferThisArg', suggestions: 1 }
       ]
     }
   ]

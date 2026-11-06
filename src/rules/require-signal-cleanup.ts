@@ -14,6 +14,7 @@ import {
   getThisBinding,
   isConnectCall
 } from '../utils/signals';
+import { resolveNameListOption } from '../utils/options';
 import {
   ClassOwnershipFacts,
   DEFAULT_LONG_LIVED_TYPES,
@@ -56,7 +57,13 @@ const requireSignalCleanup = createRule({
               type: 'string'
             },
             description:
-              'Type names treated as application-lifetime services. Replaces the built-in list when provided.'
+              'Type names treated as application-lifetime services. Added to the built-in defaults unless extendDefaultLongLivedTypes is false.'
+          },
+          extendDefaultLongLivedTypes: {
+            type: 'boolean',
+            default: true,
+            description:
+              'Whether longLivedTypes extends the built-in defaults. Set to false to replace them, or to drop them entirely when no list is given.'
           }
         },
         additionalProperties: false
@@ -66,15 +73,18 @@ const requireSignalCleanup = createRule({
   defaultOptions: [
     {
       additionalCleanupMethods: [] as string[],
-      longLivedTypes: undefined as string[] | undefined
+      longLivedTypes: undefined as string[] | undefined,
+      extendDefaultLongLivedTypes: true
     }
   ],
 
   create(context, [options]) {
     const additionalCleanupMethods: string[] =
       options.additionalCleanupMethods || [];
-    const longLivedTypes = new Set(
-      options.longLivedTypes ?? DEFAULT_LONG_LIVED_TYPES
+    const longLivedTypes = resolveNameListOption(
+      options.longLivedTypes,
+      DEFAULT_LONG_LIVED_TYPES,
+      options.extendDefaultLongLivedTypes !== false
     );
 
     const { services, checker } = getTypeServices(context);
