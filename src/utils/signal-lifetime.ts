@@ -67,22 +67,6 @@ export const DEFAULT_LONG_LIVED_TYPES: readonly string[] = [
 ];
 
 /**
- * Resolves the configured `longLivedTypes` set, optionally extending the built-in defaults.
- */
-export function resolveLongLivedTypes(
-  longLivedTypes?: readonly string[],
-  extendDefaults?: boolean
-): Set<string> {
-  if (!longLivedTypes) {
-    return new Set(DEFAULT_LONG_LIVED_TYPES);
-  }
-  if (extendDefaults) {
-    return new Set([...DEFAULT_LONG_LIVED_TYPES, ...longLivedTypes]);
-  }
-  return new Set(longLivedTypes);
-}
-
-/**
  * JupyterLab's MVC convention: `Foo`/`FooModel` pairs where the model is
  * created by the document/context and the view is disposed independently
  * (notebook windowing, "New View for Notebook", output area recycling).

@@ -16,15 +16,16 @@ import {
   isConnectCall,
   resolveUnboundThisMethodConnect
 } from '../utils/signals';
+import { resolveNameListOption } from '../utils/options';
 import {
   ClassOwnershipFacts,
+  DEFAULT_LONG_LIVED_TYPES,
   analyzeSender,
   buildSenderChain,
   classifyCallbackShape,
   collectClassOwnershipFacts,
   hasMatchingDisconnect,
-  isSelfTerminatingSignal,
-  resolveLongLivedTypes
+  isSelfTerminatingSignal
 } from '../utils/signal-lifetime';
 
 const preferSignalThisArg = createRule({
@@ -55,13 +56,13 @@ const preferSignalThisArg = createRule({
               type: 'string'
             },
             description:
-              'Type names treated as application-lifetime services. Added to the built-in defaults when extendDefaultLongLivedTypes is true, or replaces them when false.'
+              'Type names treated as application-lifetime services. Added to the built-in defaults unless extendDefaultLongLivedTypes is false.'
           },
           extendDefaultLongLivedTypes: {
             type: 'boolean',
-            default: false,
+            default: true,
             description:
-              'Whether longLivedTypes extends the built-in defaults instead of replacing them.'
+              'Whether longLivedTypes extends the built-in defaults. Set to false to replace them, or to drop them entirely when no list is given.'
           }
         },
         additionalProperties: false
@@ -71,14 +72,15 @@ const preferSignalThisArg = createRule({
   defaultOptions: [
     {
       longLivedTypes: undefined as string[] | undefined,
-      extendDefaultLongLivedTypes: false
+      extendDefaultLongLivedTypes: true
     }
   ],
 
   create(context, [options]) {
-    const longLivedTypes = resolveLongLivedTypes(
+    const longLivedTypes = resolveNameListOption(
       options.longLivedTypes,
-      options.extendDefaultLongLivedTypes
+      DEFAULT_LONG_LIVED_TYPES,
+      options.extendDefaultLongLivedTypes !== false
     );
 
     const { services, checker } = getTypeServices(context);

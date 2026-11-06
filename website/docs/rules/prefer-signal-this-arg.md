@@ -135,17 +135,36 @@ A matching one-argument `disconnect(callback)` already provides cleanup and is l
 
 ## Options
 
-- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. Added to the built-in defaults when `extendDefaultLongLivedTypes` is `true`, or replaces them when `false`. The default list is:
+- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. Added to the built-in defaults unless `extendDefaultLongLivedTypes` is `false`. The default list is:
 
   `CommandRegistry`, `IDebugger`, `IDocumentManager`, `ILSPConnection`, `ILabShell`, `ILanguageServerManager`, `IRenderMimeRegistry`, `ISessionConnection`, `ISessionContext`, `ISettingRegistry`, `IShell`, `IStateDB`, `IThemeManager`, `ServiceManager`
 
-- `extendDefaultLongLivedTypes` (`boolean`, default `false`): whether `longLivedTypes` extends the built-in defaults instead of replacing them.
+- `extendDefaultLongLivedTypes` (`boolean`, default `true`): whether `longLivedTypes` extends the built-in defaults. Set to `false` to replace them, or to drop them entirely when no list is given.
+
+Extending the defaults, the common case:
 
 ```json
 {
   "jupyter/prefer-signal-this-arg": [
     "warn",
-    { "longLivedTypes": ["ISettingRegistry", "IMyAppService"] }
+    {
+      "longLivedTypes": ["IMyAppService"],
+      "extendDefaultLongLivedTypes": true
+    }
+  ]
+}
+```
+
+Replacing the built-in defaults:
+
+```json
+{
+  "jupyter/prefer-signal-this-arg": [
+    "warn",
+    {
+      "longLivedTypes": ["IMyAppService"],
+      "extendDefaultLongLivedTypes": false
+    }
   ]
 }
 ```

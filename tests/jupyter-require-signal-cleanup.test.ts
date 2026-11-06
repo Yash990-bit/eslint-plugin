@@ -300,23 +300,8 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
       options: [{ additionalCleanupMethods: ['_teardown'] }]
     },
     {
-      // longLivedTypes replaces the built-in list, so ISettingRegistry is no
-      // longer treated as application-lifetime.
-      filename: 'tests/type-aware-fixture.ts',
-      code: `${PRELUDE}
-        class Watcher implements IDisposable {
-          constructor(registry: ISettingRegistry) {
-            registry.pluginChanged.connect(this._onChanged, this);
-          }
-          readonly isDisposed = false;
-          dispose(): void {}
-          private _onChanged(): void {}
-        }
-      `,
-      options: [{ longLivedTypes: ['IMyOwnService'] }]
-    },
-    {
-      // With extendDefaultLongLivedTypes: false, longLivedTypes replaces the built-in list.
+      // longLivedTypes replaces the built-in list when extendDefaultLongLivedTypes is false,
+      // so ISettingRegistry is no longer treated as application-lifetime.
       filename: 'tests/type-aware-fixture.ts',
       code: `${PRELUDE}
         class Watcher implements IDisposable {
@@ -334,6 +319,21 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
           extendDefaultLongLivedTypes: false
         }
       ]
+    },
+    {
+      // With extendDefaultLongLivedTypes: false and no custom types, defaults are dropped entirely.
+      filename: 'tests/type-aware-fixture.ts',
+      code: `${PRELUDE}
+        class Watcher implements IDisposable {
+          constructor(registry: ISettingRegistry) {
+            registry.pluginChanged.connect(this._onChanged, this);
+          }
+          readonly isDisposed = false;
+          dispose(): void {}
+          private _onChanged(): void {}
+        }
+      `,
+      options: [{ extendDefaultLongLivedTypes: false }]
     },
     {
       // `this` in a static member is the class object, not an instance. The
@@ -385,7 +385,12 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
           private _shell: IShell;
         }
       `,
-      options: [{ longLivedTypes: ['ServiceManager'] }]
+      options: [
+        {
+          longLivedTypes: ['ServiceManager'],
+          extendDefaultLongLivedTypes: false
+        }
+      ]
     },
     {
       // A namespace-qualified entry does not match an unrelated top-level type
@@ -570,7 +575,12 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
           private _onKernel(): void {}
         }
       `,
-      options: [{ longLivedTypes: ['Session.ISessionConnection'] }],
+      options: [
+        {
+          longLivedTypes: ['Session.ISessionConnection'],
+          extendDefaultLongLivedTypes: false
+        }
+      ],
       errors: [
         {
           messageId: 'serviceOutlivesReceiver',
@@ -606,7 +616,8 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
       ]
     },
     {
-      // With extendDefaultLongLivedTypes: true, both custom types and built-in defaults are checked.
+      // By default, custom longLivedTypes extend built-in defaults. Both custom types
+      // and built-in defaults are checked.
       filename: 'tests/type-aware-fixture.ts',
       code: `${PRELUDE}
         interface ICustomAppService {
@@ -623,12 +634,7 @@ ruleTester.run('require-signal-cleanup', requireSignalCleanup, {
           private _onPluginChanged(): void {}
         }
       `,
-      options: [
-        {
-          longLivedTypes: ['ICustomAppService'],
-          extendDefaultLongLivedTypes: true
-        }
-      ],
+      options: [{ longLivedTypes: ['ICustomAppService'] }],
       errors: [
         {
           messageId: 'serviceOutlivesReceiver',

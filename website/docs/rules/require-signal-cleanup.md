@@ -165,21 +165,38 @@ This rule checks connections made with `this` as the receiver. For connections w
 
 ## Options
 
-- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. Added to the built-in defaults when `extendDefaultLongLivedTypes` is `true`, or replaces them when `false`. The default list is:
+- `longLivedTypes` (`string[]`): type names treated as application-lifetime services. Added to the built-in defaults unless `extendDefaultLongLivedTypes` is `false`. The default list is:
 
   `CommandRegistry`, `IDebugger`, `IDocumentManager`, `ILSPConnection`, `ILabShell`, `ILanguageServerManager`, `IRenderMimeRegistry`, `ISessionConnection`, `ISessionContext`, `ISettingRegistry`, `IShell`, `IStateDB`, `IThemeManager`, `ServiceManager`
 
-- `extendDefaultLongLivedTypes` (`boolean`, default `false`): whether `longLivedTypes` extends the built-in defaults instead of replacing them.
+- `extendDefaultLongLivedTypes` (`boolean`, default `true`): whether `longLivedTypes` extends the built-in defaults. Set to `false` to replace them, or to drop them entirely when no list is given.
 
 - `additionalCleanupMethods` (`string[]`, default `[]`): additional method names (besides `disconnect`) that count as cleanup evidence when called anywhere in the class. Use this to allowlist project-specific teardown idioms.
+
+Extending the defaults, the common case:
 
 ```json
 {
   "jupyter/require-signal-cleanup": [
     "warn",
     {
-      "longLivedTypes": ["ISettingRegistry", "IMyAppService"],
+      "longLivedTypes": ["IMyAppService"],
+      "extendDefaultLongLivedTypes": true,
       "additionalCleanupMethods": ["_stopObserving"]
+    }
+  ]
+}
+```
+
+Replacing the built-in defaults:
+
+```json
+{
+  "jupyter/require-signal-cleanup": [
+    "warn",
+    {
+      "longLivedTypes": ["IMyAppService"],
+      "extendDefaultLongLivedTypes": false
     }
   ]
 }
