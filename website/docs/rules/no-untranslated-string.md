@@ -236,6 +236,8 @@ Names given here are **added** to the default list unless `extendDefaultCheckPro
 }
 ```
 
+Earlier versions used `checkProperties: []` to turn these checks off; pass `extendDefaultCheckProperties: false` instead.
+
 ### `extendDefaultCheckProperties`
 
 Type: `boolean`, default: `true`.

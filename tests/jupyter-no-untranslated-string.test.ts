@@ -263,7 +263,7 @@ ruleTester.run(
       // Property names outside the list are ignored
       { code: `const opts = { id: 'my-id', className: 'my-class' };` },
       { code: `const opts = { label: '-' };` },
-      // An empty list disables the check
+      // Dropping defaults disables the check
       {
         code: `const opts = { label: 'My field' };`,
         options: [{ extendDefaultCheckProperties: false }]
@@ -340,6 +340,12 @@ ruleTester.run(
           { messageId: 'untranslatedProperty', data: { prop: 'label' } },
           { messageId: 'untranslatedProperty', data: { prop: 'helperText' } }
         ]
+      },
+      // checkProperties: [] without extendDefaultCheckProperties: false keeps the defaults
+      {
+        code: `const opts = { label: 'My field' };`,
+        options: [{ checkProperties: [] }],
+        errors: [{ messageId: 'untranslatedProperty', data: { prop: 'label' } }]
       },
       // More specific branches still win, without duplicate reports
       {
@@ -431,7 +437,12 @@ ruleTester.run('no-untranslated-string (assignments)', noUntranslatedString, {
     // A custom list replaces the default one
     {
       code: `el.placeholder = 'Search';`,
-      options: [{ checkProperties: ['placeholder'] }],
+      options: [
+        {
+          checkProperties: ['placeholder'],
+          extendDefaultCheckProperties: false
+        }
+      ],
       errors: [
         {
           messageId: 'untranslatedPropertyAssign',
