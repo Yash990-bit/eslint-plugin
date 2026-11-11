@@ -263,15 +263,17 @@ ruleTester.run(
       // Property names outside the list are ignored
       { code: `const opts = { id: 'my-id', className: 'my-class' };` },
       { code: `const opts = { label: '-' };` },
-      // An empty list disables the check
+      // Dropping defaults disables the check
       {
         code: `const opts = { label: 'My field' };`,
-        options: [{ checkProperties: [] }]
+        options: [{ extendDefaultCheckProperties: false }]
       },
       // A custom list replaces the default one
       {
         code: `const opts = { label: 'My field' };`,
-        options: [{ checkProperties: ['caption'] }]
+        options: [
+          { checkProperties: ['caption'], extendDefaultCheckProperties: false }
+        ]
       }
     ],
     invalid: [
@@ -323,10 +325,27 @@ ruleTester.run(
       // A custom list replaces the default one
       {
         code: `const opts = { label: 'My field', caption: 'My caption' };`,
-        options: [{ checkProperties: ['caption'] }],
+        options: [
+          { checkProperties: ['caption'], extendDefaultCheckProperties: false }
+        ],
         errors: [
           { messageId: 'untranslatedProperty', data: { prop: 'caption' } }
         ]
+      },
+      // By default, checkProperties extends the built-in defaults
+      {
+        code: `const opts = { label: 'My field', helperText: 'Need help' };`,
+        options: [{ checkProperties: ['helperText'] }],
+        errors: [
+          { messageId: 'untranslatedProperty', data: { prop: 'label' } },
+          { messageId: 'untranslatedProperty', data: { prop: 'helperText' } }
+        ]
+      },
+      // checkProperties: [] without extendDefaultCheckProperties: false keeps the defaults
+      {
+        code: `const opts = { label: 'My field' };`,
+        options: [{ checkProperties: [] }],
+        errors: [{ messageId: 'untranslatedProperty', data: { prop: 'label' } }]
       },
       // More specific branches still win, without duplicate reports
       {
@@ -362,17 +381,27 @@ ruleTester.run('no-untranslated-string (assignments)', noUntranslatedString, {
     { code: `title.textContent = '-';` },
     { code: `anchor.textContent = '¶';` },
     { code: `widget.label = ' … ';` },
-    // An empty list disables the check
-    { code: `widget.label = 'Save';`, options: [{ checkProperties: [] }] },
+    // Dropping defaults disables the check
+    {
+      code: `widget.label = 'Save';`,
+      options: [{ extendDefaultCheckProperties: false }]
+    },
     // Dropping `label` also drops the Lumino widget title check
     {
       code: `widget.title.label = 'Source';`,
-      options: [{ checkProperties: ['title'] }]
+      options: [
+        { checkProperties: ['title'], extendDefaultCheckProperties: false }
+      ]
     },
     // A custom list replaces the default one
     {
       code: `widget.label = 'Save';`,
-      options: [{ checkProperties: ['textContent'] }]
+      options: [
+        {
+          checkProperties: ['textContent'],
+          extendDefaultCheckProperties: false
+        }
+      ]
     },
     // Compound assignment is not a plain assignment
     { code: `el.textContent += 'Save';` }
@@ -408,7 +437,12 @@ ruleTester.run('no-untranslated-string (assignments)', noUntranslatedString, {
     // A custom list replaces the default one
     {
       code: `el.placeholder = 'Search';`,
-      options: [{ checkProperties: ['placeholder'] }],
+      options: [
+        {
+          checkProperties: ['placeholder'],
+          extendDefaultCheckProperties: false
+        }
+      ],
       errors: [
         {
           messageId: 'untranslatedPropertyAssign',
@@ -568,15 +602,20 @@ jsxRuleTester.run(
   {
     valid: [
       { code: `<MyCheckbox label={trans.__('Enable feature')} />` },
-      // An empty list disables the check
+      // Dropping defaults disables the check
       {
         code: `<MyCheckbox label="Enable feature" />`,
-        options: [{ checkProperties: [] }]
+        options: [{ extendDefaultCheckProperties: false }]
       },
       // A custom list replaces the default one
       {
         code: `<MyCheckbox label="Enable feature" />`,
-        options: [{ checkProperties: ['placeholder'] }]
+        options: [
+          {
+            checkProperties: ['placeholder'],
+            extendDefaultCheckProperties: false
+          }
+        ]
       }
     ],
     invalid: [
@@ -595,7 +634,12 @@ jsxRuleTester.run(
       // A custom list replaces the default one
       {
         code: `<MyInput placeholder="Search" label="Enable feature" />`,
-        options: [{ checkProperties: ['placeholder'] }],
+        options: [
+          {
+            checkProperties: ['placeholder'],
+            extendDefaultCheckProperties: false
+          }
+        ],
         errors: [
           {
             messageId: 'untranslatedJsxAttribute',
@@ -652,7 +696,7 @@ ruleTester.run(
           el.setAttribute('alt', 'A diagram');
           const opts = { alt: 'A diagram' };
         `,
-        options: [{ checkProperties: [] }]
+        options: [{ extendDefaultCheckProperties: false }]
       }
     ],
     invalid: [
@@ -724,7 +768,9 @@ ruleTester.run('no-untranslated-string (name spelling)', noUntranslatedString, {
         el.ariaLabel = 'Search results';
         el.setAttribute('aria-label', 'Search results');
       `,
-      options: [{ checkProperties: ['label'] }]
+      options: [
+        { checkProperties: ['label'], extendDefaultCheckProperties: false }
+      ]
     }
   ],
   invalid: [
