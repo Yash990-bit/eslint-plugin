@@ -62,9 +62,34 @@ nonTypeAwareTester.run(
             activate: (app: JupyterFrontEnd, ...rest: unknown[]) => {}
           };
         `
+      },
+      {
+        code: `
+          const plugin: JupyterLabPlugin<void> = {
+            id: 'test-plugin',
+            activate: (app: JupyterFrontEnd) => {}
+          };
+        `
       }
     ],
     invalid: [
+      {
+        code: `
+          const plugin: JupyterLabPlugin<void> = {
+            id: 'test-plugin',
+            activate: (app: JupyterFrontEnd, extra: unknown) => {}
+          };
+        `,
+        errors: [
+          {
+            messageId: 'wrongArgumentCount'
+          },
+          {
+            messageId: 'extraArgument',
+            data: { arg: 'extra' }
+          }
+        ]
+      },
       // This same case is in valid cases for the type-aware tester
       {
         filename: 'tests/type-aware-fixture.ts',

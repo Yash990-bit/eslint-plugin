@@ -41,6 +41,18 @@ ruleTester.run('plugin-description', pluginDescription, {
     },
     {
       code: `
+        const plugin: JupyterLabPlugin<void> = {
+          'id': 'jupyterlab-notify:plugin',
+          'description': 'Enhanced cell execution notifications for JupyterLab',
+          autoStart: true,
+          activate: (app: JupyterFrontEnd) => {
+            console.log('Activated');
+          }
+        };
+      `
+    },
+    {
+      code: `
         const description = 'My plugin description';
         const test: JupyterFrontEndPlugin<void> = {
           id: 'var-desc-plugin',
@@ -282,6 +294,23 @@ ruleTester.run('plugin-description', pluginDescription, {
     {
       code: `
         const plugin: JupyterFrontEndPlugin<void> = {
+          id: 'jupyterlab-notify:plugin',
+          autoStart: true,
+          activate: (app: JupyterFrontEnd) => {
+            console.log('Activated');
+          }
+        };
+      `,
+      errors: [
+        {
+          messageId: 'missingDescription',
+          data: { pluginId: ' "jupyterlab-notify:plugin"' }
+        }
+      ]
+    },
+    {
+      code: `
+        const plugin: JupyterLabPlugin<void> = {
           id: 'jupyterlab-notify:plugin',
           autoStart: true,
           activate: (app: JupyterFrontEnd) => {

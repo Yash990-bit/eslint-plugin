@@ -1008,6 +1008,19 @@ ruleTester.run('prefer-lazy-imports', preferLazyImports, {
       `,
       errors: [{ messageId: 'preferLazyImport' }]
     },
+    {
+      code: `
+        import { JupyterLabPlugin } from '@jupyterlab/application';
+        import { HeavyThing } from 'heavy-pkg';
+        const plugin: JupyterLabPlugin<void> = {
+          id: 'test:plugin',
+          activate: () => {
+            registry.add({ requires: [HeavyThing] });
+          }
+        };
+      `,
+      errors: [{ messageId: 'preferLazyImport' }]
+    },
     // A namespace beside other bindings has no single-line deferred form.
     {
       code: `

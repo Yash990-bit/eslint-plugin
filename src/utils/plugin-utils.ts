@@ -240,7 +240,10 @@ export function getPluginKindFromTypeName(
     return null;
   }
   const lastSegment = name.split('.').pop() ?? name;
-  if (lastSegment === 'JupyterFrontEndPlugin') {
+  if (
+    lastSegment === 'JupyterFrontEndPlugin' ||
+    lastSegment === 'JupyterLabPlugin'
+  ) {
     return 'frontend';
   }
   if (lastSegment === 'ServiceManagerPlugin') {

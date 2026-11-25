@@ -102,6 +102,17 @@ ruleTester.run('plugin-id-convention', pluginIdConvention, {
     {
       filename: fixtureFilename,
       code: `
+        const plugin: JupyterLabPlugin<void> = {
+          id: '@jupyterlab/example-extension:plugin',
+          description: 'Example plugin',
+          autoStart: true,
+          activate: () => {}
+        };
+      `
+    },
+    {
+      filename: fixtureFilename,
+      code: `
         const PLUGIN_ID = '@jupyterlab/example-extension:main';
         const plugin: JupyterFrontEndPlugin<void> = {
           id: PLUGIN_ID,
@@ -499,6 +510,16 @@ ruleTester.run('plugin-id-convention', pluginIdConvention, {
         const plugin = <JupyterFrontEndPlugin<void>>{
           id: '@jupyterlab/other-extension:plugin',
           activate() {}
+        };
+      `,
+      errors: [{ messageId: 'mismatchedPrefix' }]
+    },
+    {
+      filename: fixtureFilename,
+      code: `
+        const plugin: JupyterLabPlugin<void> = {
+          id: '@jupyterlab/other-extension:plugin',
+          activate: () => {}
         };
       `,
       errors: [{ messageId: 'mismatchedPrefix' }]
