@@ -35,7 +35,10 @@ function getLoadCallObject(node: TSESTree.Node): TSESTree.Node | null {
  * Returns true when the expression looks like an ITranslator: an identifier
  * or property whose name contains "translator", e.g. `translator`,
  * `this.translator`, `this._translator`, `props.translator` or
- * `nullTranslator`.
+ * `nullTranslator`. Also handles nullish-coalescing / logical-OR fallback
+ * patterns such as `(translator ?? nullTranslator)` and
+ * `(this.translator || nullTranslator)`, and ternary fallbacks such as
+ * `(translator ? translator : nullTranslator)`.
  */
 function isTranslatorReference(node: TSESTree.Node): boolean {
   const expression = unwrapExpression(node);
@@ -48,6 +51,23 @@ function isTranslatorReference(node: TSESTree.Node): boolean {
     expression.property.type === 'Identifier'
   ) {
     return /translator/i.test(expression.property.name);
+  }
+  // Handle `??` and `||` fallback patterns, e.g. `(translator ?? nullTranslator)`
+  if (
+    expression.type === 'LogicalExpression' &&
+    (expression.operator === '??' || expression.operator === '||')
+  ) {
+    return (
+      isTranslatorReference(expression.left) ||
+      isTranslatorReference(expression.right)
+    );
+  }
+  // Handle ternary fallback patterns, e.g. `(translator ? translator : nullTranslator)`
+  if (expression.type === 'ConditionalExpression') {
+    return (
+      isTranslatorReference(expression.consequent) ||
+      isTranslatorReference(expression.alternate)
+    );
   }
   return false;
 }

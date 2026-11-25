@@ -62,7 +62,19 @@ ruleTester.run('incorrect-translator-usage', incorrectTranslatorUsage, {
     { code: `const bundle = getTranslator().load('mydomain');` },
     // Computed targets are not checked
     { code: `this['bundle'] = translator.load('mydomain');` },
-    { code: `class A { ['bundle'] = translator.load('mydomain'); }` }
+    { code: `class A { ['bundle'] = translator.load('mydomain'); }` },
+    // Fallback patterns: ?? / || / ternary — correct bundle name stays valid
+    {
+      code: `const trans = (translator ?? nullTranslator).load('jupyterlab');`
+    },
+    {
+      code: `const trans = (this.translator || nullTranslator).load('mydomain');`
+    },
+    {
+      code: `const trans = (translator ? translator : nullTranslator).load('jupyterlab');`
+    },
+    // Passing the result of a fallback load to another function is fine
+    { code: `createWidget((translator ?? nullTranslator).load('mydomain'));` }
   ],
 
   invalid: [
@@ -159,6 +171,35 @@ ruleTester.run('incorrect-translator-usage', incorrectTranslatorUsage, {
     {
       code: `function f({ __ } = translator.load('mydomain')) {}`,
       errors: [{ messageId: 'destructuredBundle' }]
+    },
+    // Fallback patterns: chained bundle method
+    {
+      code: `(translator ?? nullTranslator).load('jupyterlab').__('some text');`,
+      errors: [{ messageId: 'chainedBundleMethod' }]
+    },
+    {
+      code: `(this.translator || nullTranslator).load('mydomain')._n('%1 item', '%1 items', n);`,
+      errors: [{ messageId: 'chainedBundleMethod' }]
+    },
+    // Fallback patterns: wrong variable name
+    {
+      code: `const bundle = (translator ?? nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    // Fallback patterns: destructuring
+    {
+      code: `const { __ } = (translator ?? nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'destructuredBundle' }]
+    },
+    // Fallback patterns: assignment to unrecognized member
+    {
+      code: `this._bundle = (this.translator || nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    // Ternary fallback: wrong variable name
+    {
+      code: `const bundle = (translator ? translator : nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
     }
   ]
 });

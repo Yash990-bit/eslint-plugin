@@ -69,6 +69,29 @@ const trans = translator.load('jupyterlab');
 trans.__('Open file');
 ```
 
+### Handle optional-translator fallback patterns
+
+When `ITranslator` is optional, extensions commonly fall back to `nullTranslator`
+using `??`, `||`, or a ternary. The rule recognises these patterns and enforces
+the same storage rules.
+
+**Incorrect**
+
+```ts
+// Chained call — not found by the string extractor
+(translator ?? nullTranslator).load('jupyterlab').__('Open file');
+
+// Wrong variable name
+const bundle = (translator ?? nullTranslator).load('jupyterlab');
+```
+
+**Correct**
+
+```ts
+const trans = (translator ?? nullTranslator).load('jupyterlab');
+trans.__('Open file');
+```
+
 ## Why
 
 A translation call can run correctly but still be missing from language packs. The extractor recognizes only `trans`, `this.trans`, `this._trans`, `props.trans` and `this.props.trans`. Use one of these names so your messages can be collected for translation.
