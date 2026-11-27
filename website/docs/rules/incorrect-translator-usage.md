@@ -69,19 +69,15 @@ const trans = translator.load('jupyterlab');
 trans.__('Open file');
 ```
 
-### Handle optional-translator fallback patterns
+### Fall back to `nullTranslator` the same way
 
-When `ITranslator` is optional, extensions commonly fall back to `nullTranslator`
-using `??`, `||`, or a ternary. The rule recognises these patterns and enforces
-the same storage rules.
+When `ITranslator` is optional, extensions often fall back to `nullTranslator` with `??`, `||` or a ternary before calling `load()`. The same storage rules apply to the returned bundle.
 
 **Incorrect**
 
 ```ts
-// Chained call — not found by the string extractor
 (translator ?? nullTranslator).load('jupyterlab').__('Open file');
 
-// Wrong variable name
 const bundle = (translator ?? nullTranslator).load('jupyterlab');
 ```
 
@@ -105,7 +101,7 @@ This rule has no options.
 <details>
 <summary>Which bundle uses are checked?</summary>
 
-The rule checks `.load()` calls on objects whose names contain `translator`, including `nullTranslator`. It reports unrecognized storage names, destructuring, and translation methods called directly on the returned bundle. Unrelated `.load()` APIs are ignored.
+The rule checks `.load()` calls on objects whose names contain `translator`, including `nullTranslator`, and on `??`, `||` or ternary fallbacks between them such as `(translator ?? nullTranslator)`. It reports unrecognized storage names, destructuring, and translation methods called directly on the returned bundle. Unrelated `.load()` APIs are ignored.
 
 Passing a bundle to another function or returning it is allowed; the receiving code must store it under a recognized name.
 
