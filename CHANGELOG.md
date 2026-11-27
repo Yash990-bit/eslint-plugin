@@ -2,6 +2,34 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 1.5.1
+
+([Full Changelog](https://github.com/jupyterlab/eslint-plugin/compare/v1.5.0...a801a90e224738d749e7367bf7b7586356d8e6c4))
+
+### Bugs fixed
+
+- Recognize `??`, `||` and ternary translator fallbacks in `incorrect-translator-usage` [#179](https://github.com/jupyterlab/eslint-plugin/pull/179) ([@Yash990-bit](https://github.com/Yash990-bit), [@Darshan808](https://github.com/Darshan808))
+
+### Maintenance and upkeep improvements
+
+- Make license header workflow a read-only check [#180](https://github.com/jupyterlab/eslint-plugin/pull/180) ([@jasongrout](https://github.com/jasongrout), [@krassowski](https://github.com/krassowski))
+
+### Other merged PRs
+
+- Bump joi from 17.13.8 to 17.13.9 in /website in the npm_and_yarn group across 1 directory [#182](https://github.com/jupyterlab/eslint-plugin/pull/182) ([@Darshan808](https://github.com/Darshan808))
+- Bump the npm_and_yarn group across 1 directory with 3 updates [#181](https://github.com/jupyterlab/eslint-plugin/pull/181) ([@Darshan808](https://github.com/Darshan808))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/eslint-plugin/graphs/contributors?from=2026-11-17&to=2026-11-27&type=c))
+
+@Darshan808 ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3ADarshan808+updated%3A2026-11-17..2026-11-27&type=Issues)) | @jasongrout ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3Ajasongrout+updated%3A2026-11-17..2026-11-27&type=Issues)) | @krassowski ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3Akrassowski+updated%3A2026-11-17..2026-11-27&type=Issues)) | @Yash990-bit ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3AYash990-bit+updated%3A2026-11-17..2026-11-27&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 1.5.0
 
 ([Full Changelog](https://github.com/jupyterlab/eslint-plugin/compare/v1.4.0...ec88e8891497953504f7fd7bfd8fc5e185e37a96))
@@ -48,8 +76,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/jupyterlab/eslint-plugin/graphs/contributors?from=2026-10-13&to=2026-11-17&type=c))
 
 @Copilot ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3ACopilot+updated%3A2026-10-13..2026-11-17&type=Issues)) | @Darshan808 ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3ADarshan808+updated%3A2026-10-13..2026-11-17&type=Issues)) | @krassowski ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3Akrassowski+updated%3A2026-10-13..2026-11-17&type=Issues)) | @Yash990-bit ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Feslint-plugin+involves%3AYash990-bit+updated%3A2026-10-13..2026-11-17&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 1.4.0
 
