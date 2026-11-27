@@ -69,6 +69,25 @@ const trans = translator.load('jupyterlab');
 trans.__('Open file');
 ```
 
+### Fall back to `nullTranslator` the same way
+
+When `ITranslator` is optional, extensions often fall back to `nullTranslator` with `??`, `||` or a ternary before calling `load()`. The same storage rules apply to the returned bundle.
+
+**Incorrect**
+
+```ts
+(translator ?? nullTranslator).load('jupyterlab').__('Open file');
+
+const bundle = (translator ?? nullTranslator).load('jupyterlab');
+```
+
+**Correct**
+
+```ts
+const trans = (translator ?? nullTranslator).load('jupyterlab');
+trans.__('Open file');
+```
+
 ## Why
 
 A translation call can run correctly but still be missing from language packs. The extractor recognizes only `trans`, `this.trans`, `this._trans`, `props.trans` and `this.props.trans`. Use one of these names so your messages can be collected for translation.
@@ -82,7 +101,7 @@ This rule has no options.
 <details>
 <summary>Which bundle uses are checked?</summary>
 
-The rule checks `.load()` calls on objects whose names contain `translator`, including `nullTranslator`. It reports unrecognized storage names, destructuring, and translation methods called directly on the returned bundle. Unrelated `.load()` APIs are ignored.
+The rule checks `.load()` calls on objects whose names contain `translator`, including `nullTranslator`, and on `??`, `||` or ternary fallbacks between them such as `(translator ?? nullTranslator)`. It reports unrecognized storage names, destructuring, and translation methods called directly on the returned bundle. Unrelated `.load()` APIs are ignored.
 
 Passing a bundle to another function or returning it is allowed; the receiving code must store it under a recognized name.
 

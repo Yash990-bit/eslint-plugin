@@ -58,11 +58,34 @@ ruleTester.run('incorrect-translator-usage', incorrectTranslatorUsage, {
     // A chained bundle method on a non-translator .load() is out of scope
     { code: `i18n.load('mydomain').__('some text');` },
     { code: `registry.load('my-plugin').gettext('label');` },
-    // The translator has to be an identifier or property to be recognized
+    // The translator has to be an identifier or property (or a `??`, `||` or
+    // ternary fallback between them) to be recognized
     { code: `const bundle = getTranslator().load('mydomain');` },
     // Computed targets are not checked
     { code: `this['bundle'] = translator.load('mydomain');` },
-    { code: `class A { ['bundle'] = translator.load('mydomain'); }` }
+    { code: `class A { ['bundle'] = translator.load('mydomain'); }` },
+    // Fallback patterns: ?? / || / ternary — correct bundle name stays valid
+    {
+      code: `const trans = (translator ?? nullTranslator).load('jupyterlab');`
+    },
+    {
+      code: `const trans = (this.translator || nullTranslator).load('mydomain');`
+    },
+    {
+      code: `const trans = (translator ? translator : nullTranslator).load('jupyterlab');`
+    },
+    {
+      code: `const trans = (props.translator ?? nullTranslator).load('jupyterlab');`
+    },
+    {
+      code: `class A { constructor(options) { this._trans = (options.translator ?? nullTranslator).load('jupyterlab'); } }`
+    },
+    // Passing the result of a fallback load to another function is fine
+    { code: `createWidget((translator ?? nullTranslator).load('mydomain'));` },
+    // A fallback with no translator-like operand is not a translator
+    { code: `const state = (this.cache ?? connector).load(id);` },
+    // Only the branches of a ternary are checked, not its condition
+    { code: `const state = (translator ? registry : connector).load(id);` }
   ],
 
   invalid: [
@@ -159,6 +182,53 @@ ruleTester.run('incorrect-translator-usage', incorrectTranslatorUsage, {
     {
       code: `function f({ __ } = translator.load('mydomain')) {}`,
       errors: [{ messageId: 'destructuredBundle' }]
+    },
+    // Fallback patterns: chained bundle method
+    {
+      code: `(translator ?? nullTranslator).load('jupyterlab').__('some text');`,
+      errors: [{ messageId: 'chainedBundleMethod' }]
+    },
+    {
+      code: `(this.translator || nullTranslator).load('mydomain')._n('%1 item', '%1 items', n);`,
+      errors: [{ messageId: 'chainedBundleMethod' }]
+    },
+    // Fallback patterns: wrong variable name
+    {
+      code: `const bundle = (translator ?? nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    // Fallback patterns: destructuring
+    {
+      code: `const { __ } = (translator ?? nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'destructuredBundle' }]
+    },
+    // Fallback patterns: assignment to unrecognized member
+    {
+      code: `this._bundle = (this.translator || nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    // Ternary fallback: wrong variable name
+    {
+      code: `const bundle = (translator ? translator : nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    // Fallback patterns: TypeScript wrappers and chained fallbacks
+    {
+      code: `const bundle = ((translator as ITranslator | undefined) ?? nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    {
+      code: `const bundle = (options.translator ?? this.translator ?? nullTranslator).load('jupyterlab');`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    // Fallback patterns: class and object properties
+    {
+      code: `class A { bundle = (translator ?? nullTranslator).load('jupyterlab'); }`,
+      errors: [{ messageId: 'invalidBundleName' }]
+    },
+    {
+      code: `const options = { bundle: (translator || nullTranslator).load('mydomain') };`,
+      errors: [{ messageId: 'invalidBundleName' }]
     }
   ]
 });
